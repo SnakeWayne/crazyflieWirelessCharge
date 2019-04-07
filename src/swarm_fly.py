@@ -210,6 +210,8 @@ def global_dispatch():
 
         if formation_cf_uri == 'radio':  # temp define invalid uri
             continue
+        elif formation_cf_uri == 'abort':
+            act = 'land'  # flycontrol need tell every one to land, maybe set the current sequence to max for all
         else:
             dispatching = True
             while hover_check < current_formation_number:  # wait for all flying cfs to hover
