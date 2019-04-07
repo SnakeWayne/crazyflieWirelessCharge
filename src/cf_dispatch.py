@@ -57,34 +57,24 @@ class CFDispatch():
         else:
             return "radio", "radio"
 
-
-
-
-'''
-
-    def position_callback(timestamp, data, logconf):
-        print(data)
+    @staticmethod
+    def update_cfstatus(timestamp, data, logconf, cf_args, uri):
+        status = cf_args[uri][1]
+        status.current_position = [data['kalman.stateX'], data['kalman.stateY'], data['kalman.stateZ']]
+        status.current_battery = data['pm.vbat'] * 10
 
     @staticmethod
-    def add_callback_to_singlecf(status_list):
-        if __name__ == '__main__':
-            cflib.crtp.init_drivers(enable_debug_driver=False)
-            log_conf = LogConfig(name='Position', period_in_ms=500)
-            log_conf1 = LogConfig(name='Battery', period_in_ms=500)
-            #对要获取到的参数进行log注册
-            log_conf.add_variable('ranging.distance2', 'float')
-            log_conf1.add_variable('battery', 'float')
+    def add_callback_to_singlecf(uri, scf, cf_args):
+        cflib.crtp.init_drivers(enable_debug_driver=False)
+        log_conf = LogConfig(name=uri, period_in_ms=500)
+        log_conf.add_variable('kalman.stateX', 'float')
+        log_conf.add_variable('kalman.stateY', 'float')
+        log_conf.add_variable('kalman.stateZ', 'float')
+        log_conf.add_variable('pm.vbat', 'float')
+        scf.cf.log.add_config(log_conf)
 
-        #对list中的每个无人机状态进行更新
-        for i in list:
-            with SyncCrazyflie(list[i].url, cf=Crazyflie(rw_cache='./cache')) as scf:
-                #位置信息
-                scf.cf.log.add_config(log_conf)
-                log_conf.data_received_cb.add_callback(position_callback)
+        def outer_callback(timestamp, data, logconf):
+            return CFDispatch.update_cfstatus(timestamp, data, logconf, cf_args, uri)
+        log_conf.data_received_cb.add_callback(outer_callback)
+        log_conf.start()
 
-                #电量信息
-                scf.cf.log.add_config(log_conf1)
-                log_conf1.data_received_cb.add_callback(position_callback)
-
-
-'''

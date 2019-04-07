@@ -6,6 +6,8 @@ The main function to control multi cf to fly and then dynamic change cf to charg
 import time
 
 import cflib.crtp
+
+from src.cf_dispatch import CFDispatch
 from src.public_swarm import PublicSWarm
 from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.swarm import CachedCfFactory
@@ -45,6 +47,9 @@ uris = {
     URI1,
     URI2,
 }
+
+# List of scfs
+scfs = []
 
 
 def wait_for_position_estimator(scf):
@@ -144,7 +149,7 @@ def run_sequence(scf, cf_arg):
     try:
         cf = scf.cf
         cf.param.set_value('flightmode.posSet', '1')
-        CFDispatch.add_callback_to_singlecf(cf.link_uri)
+        CFDispatch.add_callback_to_singlecf(cf.link_uri, scf, cf_args)
         global dispatching
         global hover_check
         global current_formation_number
@@ -239,6 +244,9 @@ if __name__ == '__main__':
         # flying.
         print('Waiting for parameters to be downloaded...')
         swarm.parallel(wait_for_param_download)
+
+        global scfs
+        scfs = swarm.get_all_scfs()
 
         swarm.parallel_unblock(run_sequence, args_dict=cf_args)
         global_dispatch()
