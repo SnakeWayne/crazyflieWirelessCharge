@@ -3,6 +3,19 @@
 from threading import Thread
 
 from cflib.crazyflie.swarm import Swarm
+from cflib.crazyflie import Crazyflie
+from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
+from cflib.crazyflie.swarm import CachedCfFactory
+from cflib.crazyflie.swarm import Reporter
+
+
+class _Factory:
+    """
+    Default Crazyflie factory class.
+    """
+
+    def construct(self, uri):
+        return SyncCrazyflie(uri)
 
 
 class PublicSWarm(Swarm):

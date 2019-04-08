@@ -6,7 +6,9 @@ The main function to control multi cf to fly and then dynamic change cf to charg
 import time
 
 import cflib.crtp
-from src.public_swarm import PublicSWarm
+
+from src.cf_dispatch import CFDispatch
+from src.customcflib.public_swarm import PublicSWarm
 from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.swarm import CachedCfFactory
 from cflib.crazyflie.syncLogger import SyncLogger
@@ -45,6 +47,9 @@ uris = {
     URI1,
     URI2,
 }
+
+# List of scfs
+scfs = []
 
 
 def wait_for_position_estimator(scf):
@@ -144,7 +149,7 @@ def run_sequence(scf, cf_arg):
     try:
         cf = scf.cf
         cf.param.set_value('flightmode.posSet', '1')
-        CFDispatch.add_callback_to_singlecf(cf.link_uri)
+        CFDispatch.add_callback_to_singlecf(cf.link_uri, scf, cf_args)
         global dispatching
         global hover_check
         global current_formation_number
@@ -205,6 +210,8 @@ def global_dispatch():
 
         if formation_cf_uri == 'radio':  # temp define invalid uri
             continue
+        elif formation_cf_uri == 'abort':
+            act = 'land'  # flycontrol need tell every one to land, maybe set the current sequence to max for all
         else:
             dispatching = True
             while hover_check < current_formation_number:  # wait for all flying cfs to hover
@@ -239,6 +246,9 @@ if __name__ == '__main__':
         # flying.
         print('Waiting for parameters to be downloaded...')
         swarm.parallel(wait_for_param_download)
+
+        global scfs
+        scfs = swarm.get_all_scfs()
 
         swarm.parallel_unblock(run_sequence, args_dict=cf_args)
         global_dispatch()
