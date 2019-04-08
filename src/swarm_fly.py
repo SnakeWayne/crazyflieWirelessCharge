@@ -8,7 +8,7 @@ import time
 import cflib.crtp
 
 from src.cf_dispatch import CFDispatch
-from src.public_swarm import PublicSWarm
+from src.customcflib.public_swarm import PublicSWarm
 from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.swarm import CachedCfFactory
 from cflib.crazyflie.syncLogger import SyncLogger
