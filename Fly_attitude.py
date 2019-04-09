@@ -18,17 +18,16 @@ class CFSequence:
     current_sequence = i
     
     
-    @staticmethod
     def getSequence():
         return sequence
      
-    @staticmethod
+
     def setSequence(i=[]):
         sequence=i
         
     
         
-    @staticmethod
+
     def getCurrentSequence():
         return current_sequence
      
@@ -39,7 +38,7 @@ class CFStatus:
      current_posture=FlyPosture   #(刻画当前状态)
      
      
-     @staticmethod
+
      def getCurrentPosition():
      
          if current_posture == 1
@@ -48,19 +47,18 @@ class CFStatus:
          else
          return current_position
          
-     @staticmethod
+  
      def getCurrentBattery():
          return current_battery
          
          
-     @staticmethod
      def getCurrentPosture():
          return current_posture
          
-     @staticmethod
+     
      def setCurrentPosition(i=[]):
          current_Position=i
          
-     @staticmethod 
+     
      def setCurrentBattery(i):
          current_battery=i
