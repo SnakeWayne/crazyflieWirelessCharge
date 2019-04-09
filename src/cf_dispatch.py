@@ -19,7 +19,7 @@ class CFDispatch():
         list_charging = []  # 充电中的无人机
 
         # 遍历list根据状态分为飞行中和充电中
-        for i in list:
+        for i in range(len(status_list)):
             if status_list[i].current_posture == FlyPosture.flying:
                 list_flying.append(status_list[i])
             elif status_list[i].current_posture == FlyPosture.charging:
@@ -32,13 +32,13 @@ class CFDispatch():
         safe_battery = 20  # 安全电量
 
         # 找出飞行中电量最低的无人机
-        for i in list_flying:
+        for i in range(len(list_flying)):
             if list_flying[i].current_battery < min_battery:
                 flying_patch = i
                 min_battery = list_flying[i].current_battery
 
         # 找出充电中电量最高的无人机
-        for i in list_charging:
+        for i in range(len(list_charging)):
             if list_charging[i].current_battery > max_battery:
                 charging_patch = i
                 max_battery = list_charging[i].current_battery

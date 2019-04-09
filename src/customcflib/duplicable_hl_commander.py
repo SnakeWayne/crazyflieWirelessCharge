@@ -57,7 +57,7 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         DuplicablePositionHlCommander._status_list = status_list
 
     def _get_status(self, cf):
-        for i in DuplicablePositionHlCommander._status_list:
+        for i in range(len(DuplicablePositionHlCommander._status_list)):
             if DuplicablePositionHlCommander._status_list[i].uri == cf.link_uri:
                 return DuplicablePositionHlCommander._status_list[i]
 
