@@ -42,7 +42,7 @@ class CFStatus:
      @staticmethod
      def getCurrentPosition():
      
-         if current_posture = 1
+         if current_posture == 1
          return -1
          
          else
