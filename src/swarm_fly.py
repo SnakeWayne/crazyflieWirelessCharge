@@ -4,20 +4,26 @@ The main function to control multi cf to fly and then dynamic change cf to charg
 
 """
 import time
+import threading
 
 import cflib.crtp
-
-from src.cf_dispatch import CFDispatch
-from src.customcflib.public_swarm import PublicSWarm
 from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.swarm import CachedCfFactory
 from cflib.crazyflie.syncLogger import SyncLogger
+
+from src.cf_dispatch import CFDispatch
+from src.customcflib.public_swarm import PublicSWarm
+from src.fly_attr import FlyPosture
+from src.fly_control import FlyControl
+from src.fly_attr import CFSequence
+from src.fly_attr import CFStatus
 
 # is any cf dispatching
 dispatching = True
 
 # counter of how many cfs are hovering
 hover_check = 0
+hover_check_lock = threading.Lock()
 
 # counter of how many cf are still in formation
 current_formation_number = 2  # temp
@@ -50,6 +56,30 @@ uris = {
 
 # List of scfs
 scfs = []
+
+
+def get_status_from_status_list(uri, local_status_list):
+    def condition(status): return status.uri == uri
+    result = filter(condition, local_status_list)
+    if len(result) == 0:
+        return None
+    return result[0]
+
+
+def get_sequence_from_sequence_list(uri, local_sequence_list):
+    def condition(sequence): return sequence.uri == uri
+    result = filter(condition, local_sequence_list)
+    if len(result) == 0:
+        return None
+    return result[0]
+
+
+def get_scf_from_scf_list(uri, local_scf_list):
+    def condition(scf): return scf.cf.link_uri == uri
+    result = filter(condition, local_scf_list)
+    if len(result) == 0:
+        return None
+    return result[0]
 
 
 def wait_for_position_estimator(scf):
@@ -159,7 +189,8 @@ def run_sequence(scf, cf_arg):
         while True:
             if dispatching:  # judge if there is two cf switching to charge
                 if cf_arg[1].current_posture == FlyPosture.flying:
-                    hover_check += 1
+                    with hover_check_lock:
+                        hover_check += 1
                     while True:
                         if dispatching:
                             time.sleep(1)
@@ -202,6 +233,7 @@ def global_dispatch():
     global current_formation_number
     global status_list
     global sequence_list
+    global scfs
     while True:
         time.sleep(10)
         if current_formation_number == 0:
@@ -211,20 +243,23 @@ def global_dispatch():
         if formation_cf_uri == 'radio':  # temp define invalid uri
             continue
         elif formation_cf_uri == 'abort':
-            act = 'land'  # flycontrol need tell every one to land, maybe set the current sequence to max for all
+            print('we should land')  # flycontrol need
+            # tell every one to land, maybe set the current sequence to max for all
         else:
             dispatching = True
             while hover_check < current_formation_number:  # wait for all flying cfs to hover
                 time.sleep(1)
-            FlyControl.switch_to_charge(formation_cf_uri, charging_cf_uri, status_list)
-            sequence = cf_args[formation_cf_uri]
+            formation_cf = get_scf_from_scf_list(formation_cf_uri, scfs).cf
+            charging_cf = get_scf_from_scf_list(charging_cf_uri, scfs).cf
+            FlyControl.switch_to_charge(formation_cf, charging_cf, status_list)
+            sequence = cf_args[formation_cf_uri][0].sequence
 
             # update the sequence and posture
-            cf_args[formation_cf_uri][0].sequence = invalid_sequence
             cf_args[charging_cf_uri][0].sequence = sequence
             cf_args[formation_cf_uri][1].current_posture = FlyPosture.charging
             cf_args[charging_cf_uri][1].current_posture = FlyPosture.flying
-            hover_check = 0
+            with hover_check_lock:
+                hover_check = 0
             dispatching = False
 
 

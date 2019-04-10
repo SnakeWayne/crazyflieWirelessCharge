@@ -7,8 +7,7 @@
 import time
 import math
 import copy
-from cflib import crazyflie
-# from src.FlyPosture import Flyposture
+from src.fly_attr import FlyPosture
 from src.customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
 class FlyControl():

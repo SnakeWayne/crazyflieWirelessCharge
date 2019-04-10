@@ -7,6 +7,8 @@ from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.crazyflie.syncLogger import SyncLogger
 
+from src.fly_attr import FlyPosture
+
 
 class CFDispatch():
 
