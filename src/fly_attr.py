@@ -42,6 +42,7 @@ class CFSequence:
             else:
                 return None
         else:
+            print(item)
             raise AttributeError('没有这个属性')
 
 

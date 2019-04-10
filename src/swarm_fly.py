@@ -11,12 +11,13 @@ from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.swarm import CachedCfFactory
 from cflib.crazyflie.syncLogger import SyncLogger
 
-from src.cf_dispatch import CFDispatch
-from src.customcflib.public_swarm import PublicSWarm
-from src.fly_attr import FlyPosture
-from src.fly_control import FlyControl
-from src.fly_attr import CFSequence
-from src.fly_attr import CFStatus
+from cf_dispatch import CFDispatch
+from customcflib.public_swarm import PublicSWarm
+from fly_attr import FlyPosture
+from fly_control import FlyControl
+from fly_attr import CFSequence
+from fly_attr import CFStatus
+from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
 # is any cf dispatching
 dispatching = True
@@ -26,32 +27,44 @@ hover_check = 0
 hover_check_lock = threading.Lock()
 
 # counter of how many cf are still in formation
-current_formation_number = 2  # temp
+current_formation_number = 1  # temp
 
 # Change uris and sequences according to your setup
 URI1 = 'radio://0/40/2M/E7E7E7E7E7'
-URI2 = 'radio://0/20/2M/E7E7E7E7E7'
+URI2 = 'radio://0/10/2M/E7E7E7E7E7'
 
 # CFSequences, in the final version we may use a list to store it
-sequence1 = 1  # temp
-sequence2 = 2  # temp
-sequence_list = []  # temp
+sequence1 = CFSequence([
+[0.5, 0.5, 1.5,10],
+[0.5, 0.5, 1,5],
+[0.5, 0.5, 1.5,10],
+[0.5,0.5,1,5],
+],URI1)  # temp
+sequence2 = CFSequence([
+[0, 0, 0.5,2],
+[0, 0, 1,2],
+[0, 0, 0.5,2],
+[0,0,1,2],
+],URI2)  # temp
+sequence_list = [sequence2]  # temp
 
 # CFStatus, in the final version we may use a list to store it
-status1 = 1  # temp
-status2 = 2  # temp
-status_list = []  # temp
+status1 = CFStatus(URI1)  # temp
+status2 = CFStatus(URI2)  # temp
+status_list = [status2]  # temp
+DuplicablePositionHlCommander.set_class_status_list(status_list)
+
 
 # used to pass param to the parallel thread
 cf_args = {
-    URI1: [[sequence1, status1]],
-    URI2: [[sequence2, status2]],
+    #URI1: [[sequence1, status1]]
+    URI2: [[sequence2, status2]]
 }
 
 # List of URIs, comment the one you do not want to fly
 uris = {
-    URI1,
-    URI2,
+    #URI1,
+    URI2
 }
 
 # List of scfs
@@ -185,45 +198,44 @@ def run_sequence(scf, cf_arg):
         global current_formation_number
         global status_list
         global sequence_list
-        take_off(cf, cf_arg[0][0])
-        while True:
-            if dispatching:  # judge if there is two cf switching to charge
-                if cf_arg[1].current_posture == FlyPosture.flying:
-                    with hover_check_lock:
-                        hover_check += 1
-                    while True:
-                        if dispatching:
-                            time.sleep(1)
-                        else:
+        take_off(cf, cf_arg[0].sequence[0])
+        with DuplicablePositionHlCommander(scf) as commander:
+            while True:
+                if dispatching:  # judge if there is two cf switching to charge
+                    if cf_arg[1].current_posture == FlyPosture.flying:
+                        with hover_check_lock:
+                            hover_check += 1
+                        while True:
+                            if dispatching:
+                                time.sleep(0.1)
+                            else:
+                                break
+                    elif cf_arg[1].current_posture == FlyPosture.charging:
+                        while True:
+                            if dispatching:
+                                time.sleep(1)
+                            else:
+                                break
+                else:
+                    if cf_arg[1].current_posture == FlyPosture.flying:  # if not dispatching and you are flying just fly
+                        position = cf_arg[0].next
+                        if position == None:
+                            current_formation_number -= 1
+                            land(cf, cf_arg[0].sequence[-1])
+                            sequence_list.remove(cf_arg[0])
+                            status_list.remove(cf_arg[1])
                             break
-                elif cf_arg[1].current_posture == FlyPosture.charging:
-                    while True:
-                        if dispatching:
-                            time.sleep(1)
-                        else:
-                            break
-            else:
-                if cf_arg[1].current_posture == FlyPosture.flying:  # if not dispatching and you are flying just fly
-                    position = cf_arg[0].current_sequence
-                    print('Setting position {}'.format(position))
-                    end_time = time.time() + position[3]
-                    while time.time() < end_time:
-                        cf.commander.send_setpoint(position[1], position[0], 0,
-                                                   int(position[2] * 1000))
+                        print('Setting position {}'.format(position))
+                        end_time = time.time() + position[3]
+                        commander.go_to(position[0],position[1],position[2])
+                        time.sleep(position[3])
+                    elif cf_arg[1].current_posture == FlyPosture.charging:
                         time.sleep(0.1)
-                    if cf_arg[0].current_sequence == cf_arg[0].sequence_length:
-                        current_formation_number -= 1
-                        land(cf, cf_arg[0][-1])
-                        sequence_list.remove(cf_arg[0])
-                        status_list.remove(cf_arg[1])
-                        break
-                elif cf_arg[1].current_posture == FlyPosture.charging:
-                    time.sleep(3)
-                    if current_formation_number == 0:
-                        break
+                        if current_formation_number == 0:
+                            break
 
     except Exception as e:
-        print(e)
+            print(e)
 
 
 def global_dispatch():
@@ -239,6 +251,7 @@ def global_dispatch():
         if current_formation_number == 0:
             break
         formation_cf_uri, charging_cf_uri = CFDispatch.calculate_how_to_dispatch(status_list)
+        formation_cf_uri = 'radio'
 
         if formation_cf_uri == 'radio':  # temp define invalid uri
             continue
@@ -282,7 +295,6 @@ if __name__ == '__main__':
         print('Waiting for parameters to be downloaded...')
         swarm.parallel(wait_for_param_download)
 
-        global scfs
         scfs = swarm.get_all_scfs()
 
         swarm.parallel_unblock(run_sequence, args_dict=cf_args)

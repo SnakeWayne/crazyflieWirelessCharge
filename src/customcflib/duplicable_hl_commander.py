@@ -61,6 +61,37 @@ class DuplicablePositionHlCommander(PositionHlCommander):
             if DuplicablePositionHlCommander._status_list[i].uri == cf.link_uri:
                 return DuplicablePositionHlCommander._status_list[i]
 
+    def take_off(self, height=DEFAULT, velocity=DEFAULT):
+        """
+        Takes off, that is starts the motors, goes straight up and hovers.
+        Do not call this function if you use the with keyword. Take off is
+        done automatically when the context is created.
+
+        :param height: the height (meters) to hover at. None uses the default
+                       height set when constructed.
+        :param velocity: the velocity (meters/second) when taking off
+        :return:
+        """
+        if self._is_flying:
+            raise Exception('Already flying')
+
+        if not self._cf.is_connected():
+            raise Exception('Crazyflie is not connected')
+
+        self._is_flying = True
+        self._reset_position_estimator()
+        self._activate_controller()
+        self._activate_high_level_commander()
+        self._hl_commander = self._cf.high_level_commander
+
+        height = self._height(height)
+
+        duration_s = height / self._velocity(velocity)
+        self._hl_commander.takeoff(height, duration_s)
+        time.sleep(duration_s)
+        self._z = height
+
+
     def land(self, velocity=DEFAULT):
         """
         Go straight down and turn off the motors.
