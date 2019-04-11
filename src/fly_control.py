@@ -54,7 +54,7 @@ class FlyControl():
         # 扫描所有飞行中x负半轴方向的飞机，如果x轴的距离太近，判断y轴方向的距离
         while current_xy_distance < min_xy_distance:
             for i in range(len(status_list)):
-                if(formation_cf_uri == status_list[i].uri
+                if(formation_cf_uri != status_list[i].uri
                         and status_list[i].current_posture == FlyPosture.hover
                         and abs(status_list[i].current_position[0] - formation_cf_position[0]) < min_x_distance):
                     if (status_list[i].current_position[1] - formation_cf_position[1] >0 and

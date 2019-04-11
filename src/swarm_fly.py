@@ -20,7 +20,7 @@ from fly_attr import CFStatus
 from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
 # is any cf dispatching
-dispatching = True
+dispatching = False
 
 # counter of how many cfs are hovering
 hover_check = 0
@@ -30,15 +30,15 @@ hover_check_lock = threading.Lock()
 current_formation_number = 1  # temp
 
 # Change uris and sequences according to your setup
-URI1 = 'radio://0/40/2M/E7E7E7E7E7'
-URI2 = 'radio://0/10/2M/E7E7E7E7E7'
+URI1 = 'radio://0/10/2M/E7E7E7E7E7'
+URI2 = 'radio://0/20/2M/E7E7E7E7E7'
 
 # CFSequences, in the final version we may use a list to store it
 sequence1 = CFSequence([
-[0.5, 0.5, 1.5,10],
-[0.5, 0.5, 1,5],
-[0.5, 0.5, 1.5,10],
-[0.5,0.5,1,5],
+[0.5, 0.5, 0.5,2],
+[0.5, 0.5, 1,2],
+[0.5, 0.5, 1.5,2],
+[0.5,0.5,1,2],
 ],URI1)  # temp
 sequence2 = CFSequence([
 [0, 0, 0.5,2],
@@ -49,17 +49,16 @@ sequence2 = CFSequence([
 sequence_list = [sequence2]  # temp
 
 # CFStatus, in the final version we may use a list to store it
-status1 = CFStatus(URI1)  # temp
-status2 = CFStatus(URI2)  # temp
+status1 = CFStatus(URI1, FlyPosture.flying)  # temp
+status2 = CFStatus(URI2, FlyPosture.charging)  # temp
 status_list = [status2]  # temp
 DuplicablePositionHlCommander.set_class_status_list(status_list)
 
-
 # used to pass param to the parallel thread
 cf_args = {
-    #URI1: [[sequence1, status1]]
+    #URI1: [[sequence1, status1]],
     URI2: [[sequence2, status2]]
-}
+    }
 
 # List of URIs, comment the one you do not want to fly
 uris = {
@@ -73,7 +72,7 @@ scfs = []
 
 def get_status_from_status_list(uri, local_status_list):
     def condition(status): return status.uri == uri
-    result = filter(condition, local_status_list)
+    result = list(filter(condition, local_status_list))
     if len(result) == 0:
         return None
     return result[0]
@@ -81,7 +80,7 @@ def get_status_from_status_list(uri, local_status_list):
 
 def get_sequence_from_sequence_list(uri, local_sequence_list):
     def condition(sequence): return sequence.uri == uri
-    result = filter(condition, local_sequence_list)
+    result = list(filter(condition, local_sequence_list))
     if len(result) == 0:
         return None
     return result[0]
@@ -89,7 +88,7 @@ def get_sequence_from_sequence_list(uri, local_sequence_list):
 
 def get_scf_from_scf_list(uri, local_scf_list):
     def condition(scf): return scf.cf.link_uri == uri
-    result = filter(condition, local_scf_list)
+    result = list(filter(condition, local_scf_list))
     if len(result) == 0:
         return None
     return result[0]
@@ -198,7 +197,6 @@ def run_sequence(scf, cf_arg):
         global current_formation_number
         global status_list
         global sequence_list
-        take_off(cf, cf_arg[0].sequence[0])
         with DuplicablePositionHlCommander(scf) as commander:
             while True:
                 if dispatching:  # judge if there is two cf switching to charge
@@ -233,10 +231,8 @@ def run_sequence(scf, cf_arg):
                         time.sleep(0.1)
                         if current_formation_number == 0:
                             break
-
     except Exception as e:
-            print(e)
-
+        print(e)
 
 def global_dispatch():
     global cf_args
@@ -247,33 +243,38 @@ def global_dispatch():
     global sequence_list
     global scfs
     while True:
-        time.sleep(10)
-        if current_formation_number == 0:
-            break
-        formation_cf_uri, charging_cf_uri = CFDispatch.calculate_how_to_dispatch(status_list)
-        formation_cf_uri = 'radio'
+        try:
+            time.sleep(10)
+            if current_formation_number == 0:
+                break
+            formation_cf_uri, charging_cf_uri = CFDispatch.calculate_how_to_dispatch(status_list)
 
-        if formation_cf_uri == 'radio':  # temp define invalid uri
-            continue
-        elif formation_cf_uri == 'abort':
-            print('we should land')  # flycontrol need
-            # tell every one to land, maybe set the current sequence to max for all
-        else:
-            dispatching = True
-            while hover_check < current_formation_number:  # wait for all flying cfs to hover
-                time.sleep(1)
-            formation_cf = get_scf_from_scf_list(formation_cf_uri, scfs).cf
-            charging_cf = get_scf_from_scf_list(charging_cf_uri, scfs).cf
-            FlyControl.switch_to_charge(formation_cf, charging_cf, status_list)
-            sequence = cf_args[formation_cf_uri][0].sequence
+            if formation_cf_uri == 'radio':  # temp define invalid uri
+                continue
+            elif formation_cf_uri == 'abort':
+                print('we should land')  # flycontrol need
+                # tell every one to land, maybe set the current sequence to max for all
+            else:
+                print('switching')
+                dispatching = True
+                while hover_check < current_formation_number:  # wait for all flying cfs to hover
+                    time.sleep(1)
+                formation_cf = get_scf_from_scf_list(formation_cf_uri, scfs).cf
+                charging_cf = get_scf_from_scf_list(charging_cf_uri, scfs).cf
+                FlyControl.switch_to_charge(formation_cf, charging_cf, status_list)
+                sequence = cf_args[formation_cf_uri][0].sequence
 
-            # update the sequence and posture
-            cf_args[charging_cf_uri][0].sequence = sequence
-            cf_args[formation_cf_uri][1].current_posture = FlyPosture.charging
-            cf_args[charging_cf_uri][1].current_posture = FlyPosture.flying
-            with hover_check_lock:
-                hover_check = 0
-            dispatching = False
+                # update the sequence and posture
+                cf_args[charging_cf_uri][0].sequence = sequence
+                cf_args[formation_cf_uri][1].current_posture = FlyPosture.charging
+                cf_args[charging_cf_uri][1].current_posture = FlyPosture.flying
+                with hover_check_lock:
+                    hover_check = 0
+                dispatching = False
+        except KeyboardInterrupt:
+            print('ctrl+c incoming')
+            current_formation_number = 0
+
 
 
 if __name__ == '__main__':

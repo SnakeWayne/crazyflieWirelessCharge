@@ -47,7 +47,7 @@ class CFSequence:
 
 
 class CFStatus:
-    def __init__(self, uri, current_position=[0, 0, 0], current_battery=100,current_posture=FlyPosture.flying):
+    def __init__(self, uri, current_posture, current_position=[0, 0, 0], current_battery=100):
         """
         初始化时瞎赋值，只要求uri必须提供就行了
         :param uri: 无人机地址
