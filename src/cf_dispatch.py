@@ -7,6 +7,8 @@ from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.crazyflie.syncLogger import SyncLogger
 
+from fly_attr import FlyPosture
+
 
 class CFDispatch():
 
@@ -19,7 +21,7 @@ class CFDispatch():
         list_charging = []  # 充电中的无人机
 
         # 遍历list根据状态分为飞行中和充电中
-        for i in list:
+        for i in range(len(status_list)):
             if status_list[i].current_posture == FlyPosture.flying:
                 list_flying.append(status_list[i])
             elif status_list[i].current_posture == FlyPosture.charging:
@@ -28,17 +30,17 @@ class CFDispatch():
         min_battery = 100
         max_battery = 0
         flying_patch = 0  # 飞行中需要交换的无人机
-        charging_patch = 1  # 充电中需要交换的无人机
+        charging_patch = 0  # 充电中需要交换的无人机
         safe_battery = 20  # 安全电量
 
         # 找出飞行中电量最低的无人机
-        for i in list_flying:
+        for i in range(len(list_flying)):
             if list_flying[i].current_battery < min_battery:
                 flying_patch = i
                 min_battery = list_flying[i].current_battery
 
         # 找出充电中电量最高的无人机
-        for i in list_charging:
+        for i in range(len(list_charging)):
             if list_charging[i].current_battery > max_battery:
                 charging_patch = i
                 max_battery = list_charging[i].current_battery
@@ -48,10 +50,12 @@ class CFDispatch():
         CFDispatch._n = CFDispatch._n + 1
         if patch_min_battery < safe_battery:
             patch_min_battery = safe_battery
-
+        print('flying_patch',flying_patch)
+        print('charging_patch',charging_patch)
+        return "radio", "radio"
         # 判断一下是否需要调度
         if min_battery < patch_min_battery:
-            return list_flying[flying_patch].url, list_charging[charging_patch].url
+            return list_flying[flying_patch].uri, list_charging[charging_patch].uri
         elif max_battery < safe_battery:
             return "abort", "abort"
         else:
@@ -59,7 +63,7 @@ class CFDispatch():
 
     @staticmethod
     def update_cfstatus(timestamp, data, logconf, cf_args, uri):
-        status = cf_args[uri][1]
+        status = cf_args[uri][0][1]
         status.current_position = [data['kalman.stateX'], data['kalman.stateY'], data['kalman.stateZ']]
         status.current_battery = data['pm.vbat'] * 10
 

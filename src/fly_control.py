@@ -7,16 +7,16 @@
 import time
 import math
 import copy
-from cflib import crazyflie
-# from src.FlyPosture import Flyposture
-from src.customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
+from fly_attr import FlyPosture
+from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
 class FlyControl():
 
     @staticmethod
-    def switch_to_charge(formation_cf_uri, charging_cf_uri,status_list):
+    def switch_to_charge(formation_cf, charging_cf, status_list):
         # 获取两个uri的scf
-
+        formation_cf_uri = formation_cf.link_uri
+        charging_cf_uri = charging_cf.link_uri
         charging_cf_position = []  # 充电中的无人机位置 注：下文所有注释都用‘charging_cf’表示这一架无人机
         const_charging_cf_position = []
         formation_cf_position = []  # 编队中的无人机位置 注：下文所有注释都用‘formation_cf’表示这一架无人机
@@ -41,8 +41,6 @@ class FlyControl():
                 formation_cf_position = sts.current_position
                 const_formation_cf_position = copy.copy(sts.current_position)
 
-        charging_cf = crazyflie.Crazyflie()
-        formation_cf = crazyflie.Crazyflie()
 
         # 注册Status list
         DuplicablePositionHlCommander.set_class_status_list(status_list)
