@@ -46,6 +46,7 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         self._y = self.__status.current_position[1]
         self._z = self.__status.current_position[2]
         self._is_flying = False
+        self._hl_commander = self._cf.high_level_commander
 
     @staticmethod
     def set_class_status_list(status_list):
@@ -82,7 +83,6 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         self._reset_position_estimator()
         self._activate_controller()
         self._activate_high_level_commander()
-        self._hl_commander = self._cf.high_level_commander
 
         height = self._height(height)
 
@@ -131,6 +131,9 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         z = self.__status.current_position[2] + distance_z_m
 
         self.go_to(x, y, z, velocity)
+
+    def __enter__(self):
+        return self
 
     def go_to(self, x, y, z=DEFAULT, velocity=DEFAULT):
         """
