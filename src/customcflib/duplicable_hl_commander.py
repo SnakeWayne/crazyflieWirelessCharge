@@ -45,9 +45,9 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         self._x = self.__status.current_position[0]
         self._y = self.__status.current_position[1]
         self._z = self.__status.current_position[2]
-        self._is_flying = False
         self._hl_commander = self._cf.high_level_commander
-
+        self._is_flying = False
+       
     @staticmethod
     def set_class_status_list(status_list):
         """
@@ -74,7 +74,11 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         :return:
         """
         if self._is_flying:
-            raise Exception('Already flying')
+            print('already flying')
+            return self
+
+        if self.__status.current_position[2] > 0.1:
+            print('already flying')
 
         if not self._cf.is_connected():
             raise Exception('Crazyflie is not connected')
@@ -83,8 +87,9 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         self._reset_position_estimator()
         self._activate_controller()
         self._activate_high_level_commander()
-
+        self._hl_commander = self._cf.high_level_commander
         height = self._height(height)
+        print('current height is', height)
 
         duration_s = height / self._velocity(velocity)
         self._hl_commander.takeoff(height, duration_s)
@@ -102,14 +107,13 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         :param velocity: The velocity (meters/second) when going down
         :return:
         """
-        if self._is_flying:
-            duration_s = self.__status.current_position[2] / self._velocity(velocity)
-            self._hl_commander.land(0, duration_s)
-            time.sleep(duration_s)
-            self._z = 0.0
+        duration_s = self.__status.current_position[2] / self._velocity(velocity)
+        self._hl_commander.land(0, duration_s)
+        time.sleep(duration_s)
+        self._z = 0.0
 
-            self._hl_commander.stop()
-            self._is_flying = False
+        self._hl_commander.stop()
+        self._is_flying = False
 
     def move_distance(self, distance_x_m, distance_y_m, distance_z_m,
                       velocity=DEFAULT):

@@ -6,7 +6,7 @@ class FlyPosture(Enum):
 
     flying = 1  # 正在飞行中
 
-    hover = 2   # 等待队列调整
+    hovering = 2   # 等待队列调整
 
     changing = 3  # 被选中无人机正在进行调度
 
@@ -15,7 +15,7 @@ class FlyPosture(Enum):
 
 class CFSequence:
 
-    def __init__(self, sequence, uri, current_sequence_index=0):
+    def __init__(self, sequence, current_sequence_index=0):
         """
         初始化参数，不允许中途修改
         :param sequence: 飞行任务队列四元组，飞行具体位置xyz，飞行悬停时间s
@@ -23,14 +23,11 @@ class CFSequence:
         :param current_sequence_index: 当前飞行任务序列下标
         """
         self._sequence = sequence
-        self._uri = uri
         self._current_sequence_index = current_sequence_index
 
     def __getattr__(self, item):
         if item == 'sequence':
             return self._sequence
-        elif item == 'uri':
-            return self._uri
         elif item == 'current_sequence_index':
             return self._current_sequence_index
         elif item == 'current_sequence':
@@ -47,7 +44,7 @@ class CFSequence:
 
 
 class CFStatus:
-    def __init__(self, uri, current_posture, current_position=[0, 0, 0], current_battery=100):
+    def __init__(self, uri, current_posture, current_position=None, current_battery=100):
         """
         初始化时瞎赋值，只要求uri必须提供就行了
         :param uri: 无人机地址
@@ -56,7 +53,10 @@ class CFStatus:
         :param current_posture: FlyPosture所定义的几种姿态
         """
         self._uri = uri
-        self._current_position = current_position
+        if current_position == None:
+            self._current_position = [0, 0, 0]
+        else:
+            self._current_position = current_position
         self._current_battery = current_battery
         self._current_posture = current_posture
 
