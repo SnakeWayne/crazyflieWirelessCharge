@@ -67,9 +67,48 @@ class PublicSWarm(Swarm):
                    self._process_args_dict(scf, uri, args_dict)
 
             thread = Thread(target=self._thread_function_wrapper, args=args)
+            thread.setDaemon(True)
             threads.append(thread)
             thread.start()
 
         if reporter.is_error_reported():
             raise Exception('One or more threads raised an exception when '
                             'executing parallel task')
+
+
+        def parallel_safe(self, func, args_dict=None):
+            """
+            Execute a function for all Crazyflies in the swarm, in parallel.
+            One thread per Crazyflie is started to execute the function. The
+            threads are joined at the end and if one or more of the threads raised
+            an exception this function will also raise an exception.
+
+            For a description of the arguments, see sequential()
+
+            :param func:
+            :param args_dict:
+            """
+            threads = []
+            reporter = self.Reporter()
+
+            for uri, scf in self._cfs.items():
+                args = [func, reporter] + \
+                    self._process_args_dict(scf, uri, args_dict)
+
+                thread = Thread(target=self._thread_function_wrapper, args=args)
+                thread.setDaemon(True)
+                threads.append(thread)
+                thread.start()
+
+            for thread in threads:
+                while True:
+                    if thread.isAlive():
+                        sleep(0.1)
+                    else:
+                        break
+
+            if reporter.is_error_reported():
+                raise Exception('One or more threads raised an exception when '
+                                'executing parallel task')
+
+
