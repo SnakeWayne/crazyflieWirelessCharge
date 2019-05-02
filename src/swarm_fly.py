@@ -19,16 +19,6 @@ from fly_attr import CFSequence
 from fly_attr import CFStatus
 from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
-# is any cf dispatching
-dispatching = False
-
-# counter of how many cfs are hovering
-hover_check = 0
-hover_check_lock = threading.Lock()
-fromation_number_lock = threading.Lock()
-
-# counter of how many cf are still in formation
-current_formation_number = 1  # temp
 
 # Change uris and sequences according to your setup
 URI1 = 'radio://0/10/2M/E7E7E7E7E7'
@@ -57,21 +47,36 @@ sequence2 = CFSequence([
 [0, 0, 0.5,2],
 [0, 0, 1,2],
 ])  # temp
-sequence_list = [sequence1,sequence2]  # temp
+
+task1 = []  # 占位
+
+task2 = []  # 占位
+
+task3 = []  # 占位
+
+cf_status_lock1 = threading.Lock()
+cf_status_lock2 = threading.Lock()
+cf_status_lock3 = threading.Lock()  # 访问status.current_posture时所需要的锁
+
+task_list = [task1, task2]  # temp
 
 # CFStatus, in the final version we may use a list to store it
-status1 = CFStatus(URI1, FlyPosture.flying)  # temp
-status2 = CFStatus(URI2, FlyPosture.flying)  # temp
-status3 = CFStatus(URI3, FlyPosture.charging)  # temp
+status1 = CFStatus(URI1, FlyPosture.flying, cf_status_lock1)  # temp
+status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)  # temp
+status3 = CFStatus(URI3, FlyPosture.charging, cf_status_lock3)  # temp
 
-status_list = [status1,status2,status3]  # temp
+switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]]}  # 主线程在判断产生充电无人机时需要调度的无人机的信息位，
+# 被CFFlyTask当作静态成员供所有无人机查找
+
+status_list = [status1, status2, status3]  # temp
 DuplicablePositionHlCommander.set_class_status_list(status_list)
+
 
 # used to pass param to the parallel thread
 cf_args = {
-    URI1: [[sequence1, status1]],
-    URI2: [[sequence2, status2]],
-    URI3: [[sequence2, status3]],
+    URI1: [[task1, status1, cf_status_lock1]],
+    URI2: [[task2, status2, cf_status_lock2]],
+    URI3: [[task3, status3, cf_status_lock3]],
     }
 
 # List of URIs, comment the one you do not want to fly
@@ -187,78 +192,43 @@ def land(cf, position):
     # since the message queue is not flushed before closing
     time.sleep(0.1)
 
+def is_all_end(status_list):
+    for status in status_list:
+        if status.current_posture != FlyPosture.charging or status.current_posture != FlyPosture.over:
+            return False
+    return True
 
 def run_sequence(scf, cf_arg):
     """
     Task for one cf
     :param scf: the scf which do the task
-    :param cf_arg: the dic value list, at [0] is obj CFSequence, at [1] is obj CFStatus
+    :param cf_arg: the dic value list, at [0] is obj CFFlyTask , at [1] is obj CFStatus
     :return: None
     """
     try:
         cf = scf.cf
         cf.param.set_value('flightmode.posSet', '1')
         CFDispatch.add_callback_to_singlecf(cf.link_uri, scf, cf_arg)
-        global dispatching
-        global hover_check
-        global current_formation_number
         global status_list
-        global sequence_list
         global end_all
-        with DuplicablePositionHlCommander(scf) as commander:
-            print('before run sequnce',status_list)
-            for sta in status_list:
-                print(sta.current_position)
-            while True:
-                if end_all:
-                    break
-                else:
-                    if dispatching:  # judge if there is two cf switching to charge
-                        if cf_arg[1].current_posture == FlyPosture.flying:
-                            cf_arg[1].current_posture = FlyPosture.hovering
-                            with hover_check_lock:
-                                hover_check += 1
-                            while True:
-                                if dispatching:
-                                    time.sleep(0.1)
-                                else:
-                                    cf_arg[1].current_posture = FlyPosture.flying
-                                    break
-                        elif cf_arg[1].current_posture == FlyPosture.charging:
-                            while True:
-                                if dispatching:
-                                    time.sleep(1)
-                                else:
-                                    break
-                    else:
-                        if cf_arg[1].current_posture == FlyPosture.flying:  # if not dispatching and you are flying just fly
-                            commander.take_off()
-                            position = cf_arg[0].next
-                            if position == None:
-                                with formation_number_lock:
-                                    current_formation_number -= 1
-                                commander.land()
-                                status_list.remove(cf_arg[1])
-                                break
-                            print(cf.link_uri,'is flying')
-                            print('Setting position {}'.format(position))
-                            end_time = time.time() + position[3]
-                            commander.go_to(position[0],position[1],position[2])
-                            time.sleep(position[3])
-                        elif cf_arg[1].current_posture == FlyPosture.charging:
-                            time.sleep(0.1)
-                            if current_formation_number == 0:
-                                break
+        if cf_arg[1].current_posture == FlyPosture.flying:
+              # 注册avoiding线程
+        while True:
+            if end_all:
+                break
+            if is_all_end(status_list):
+                break
+            if cf_arg[1].current_posture == FlyPosture.flying:
+                cf_arg[0].run()
+            elif cf_arg[1].current_posture == FlyPosture.charging:
+                time.sleep(5)
     except Exception as e:
         print(e)
 
+
 def global_dispatch():
     global cf_args
-    global dispatching
-    global hover_check
-    global current_formation_number
     global status_list
-    global sequence_list
     global scfs
     global end_all
     while True:
@@ -275,28 +245,31 @@ def global_dispatch():
                 # tell every one to land, maybe set the current sequence to max for all
             else:
                 print('switching')
-                dispatching = True
-                while hover_check < current_formation_number:  # wait for all flying cfs to hover
-                    time.sleep(1)
-                print('all plane have already in hover mode')
-                formation_cf =  scfs[formation_cf_uri].cf
+                formation_cf = scfs[formation_cf_uri].cf
                 charging_cf = scfs[charging_cf_uri].cf
-                FlyControl.switch_to_charge(formation_cf, charging_cf, status_list)
-                #print('determine which two to switch')
-                sequence = cf_args[formation_cf_uri][0][0]
-
-                # update the sequence and posture
-                cf_args[charging_cf_uri][0][0] = sequence
-                cf_args[formation_cf_uri][0][1].current_posture = FlyPosture.charging
-                cf_args[charging_cf_uri][0][1].current_posture = FlyPosture.flying
-                with hover_check_lock:
-                    hover_check = 0
-                dispatching = False
+                switch_pair_list['formation'][0] = formation_cf_uri
+                formation_status = get_status_from_status_list(formation_cf_uri, status_list)
+                switch_pair_list['formation'][1][0] = formation_status.current_position[0]
+                switch_pair_list['formation'][1][1] = formation_status.current_position[1]
+                switch_pair_list['formation'][1][2] = formation_status.current_position[2]
+                switch_pair_list['charging'][0] = charging_cf_uri
+                charging_status = get_status_from_status_list(charging_cf_uri,status_list)
+                switch_pair_list['charging'][1][0] = charging_status.current_position[0]
+                switch_pair_list['charging'][1][1] = charging_status.current_position[1]
+                switch_pair_list['charging'][1][2] = charging_status.current_position[2]
+                commander = DuplicablePositionHlCommander(charging_cf)
+                commander.take_off()
+                while formation_status.current_posture != FlyPosture.charging:
+                    time.sleep(0.1)
+                print('formation cf has land')
+                # copy formation 无人机的任务给charging 无人机  task = cf_args[charging_cf_uri][0][0]
+                with charging_status.status_lock:  # 更新充电无人机状态，在无人机线程中可以唤醒
+                    charging_status.current_posture = FlyPosture.flying
+                    #  注册avoiding线程
         except KeyboardInterrupt:
             print('ctrl+c incoming')
             current_formation_number = 0
             end_all = True
-            dispatching = False
 
 
 
