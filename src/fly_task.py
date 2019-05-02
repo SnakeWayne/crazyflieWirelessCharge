@@ -154,7 +154,7 @@ class CFTrajectoryFactory:
     @staticmethod
     def arch(start, end, normal_vector):
         pass
-        # 圆弧这部分我暂时没想出来怎么比较好地实现...
+        # 圆弧这部分我暂时没想出来怎么比较好地实现..
 
     @staticmethod
     def add(first, second):
