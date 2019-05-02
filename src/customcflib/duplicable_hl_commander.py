@@ -4,6 +4,7 @@ import time
 
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.positioning.position_hl_commander import PositionHlCommander
+from fly_attr import FlyPosture
 
 
 class DuplicablePositionHlCommander(PositionHlCommander):
@@ -111,9 +112,29 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         self._hl_commander.land(0, duration_s)
         time.sleep(duration_s)
         self._z = 0.0
-
         self._hl_commander.stop()
         self._is_flying = False
+
+    def eventually_land(self, velocity=DEFAULT):
+        """
+        Go straight down and turn off the motors.
+
+        Do not call this function if you use the with keyword. Landing is
+        done automatically when the context goes out of scope.
+
+        :param velocity: The velocity (meters/second) when going down
+        :return:
+        """
+        with self.__status.status_lock:
+            self.__status.current_posture = FlyPosture.hovering
+        duration_s = self.__status.current_position[2] / self._velocity(velocity)
+        self._hl_commander.land(0, duration_s)
+        time.sleep(duration_s)
+        self._z = 0.0
+        self._hl_commander.stop()
+        self._is_flying = False
+        with self.__status.status_lock:
+            self.__status.current_posture = FlyPosture.over
 
     def move_distance(self, distance_x_m, distance_y_m, distance_z_m,
                       velocity=DEFAULT):
