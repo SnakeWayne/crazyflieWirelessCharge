@@ -97,7 +97,6 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         time.sleep(duration_s)
         self._z = height
 
-
     def land(self, velocity=DEFAULT):
         """
         Go straight down and turn off the motors.

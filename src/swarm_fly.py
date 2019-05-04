@@ -222,6 +222,8 @@ def run_sequence(scf, cf_arg):
                 cf_arg[0].run()
             elif cf_arg[1].current_posture == FlyPosture.charging:
                 time.sleep(5)
+            elif cf_arg[1].current_posture == FlyPosture.over:
+                break
     except Exception as e:
         print(e)
 
@@ -262,7 +264,7 @@ def global_dispatch():
                 while formation_status.current_posture != FlyPosture.charging:
                     time.sleep(0.1)
                 print('formation cf has land')
-                # copy formation 无人机的任务给charging 无人机  task = cf_args[charging_cf_uri][0][0]
+                cf_args[charging_cf_uri][0].copy(cf_args[formation_cf_uri][0])
                 with charging_status.status_lock:  # 更新充电无人机状态，在无人机线程中可以唤醒
                     charging_status.current_posture = FlyPosture.flying
                     #  注册avoiding线程
