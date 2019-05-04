@@ -22,7 +22,7 @@ class CFDispatch():
 
         # 遍历list根据状态分为飞行中和充电中
         for i in range(len(status_list)):
-            if status_list[i].current_posture == FlyPosture.flying:
+            if status_list[i].current_posture == FlyPosture.flying or status_list[i].current_posture == FlyPosture.hover:
                 list_flying.append(status_list[i])
             elif status_list[i].current_posture == FlyPosture.charging:
                 list_charging.append(status_list[i])
