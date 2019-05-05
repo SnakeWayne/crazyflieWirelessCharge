@@ -4,11 +4,13 @@
 
 """
 
-import time
-import math
 import copy
-from fly_attr import FlyPosture
+import math
+import time
+
+import numpy
 from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
+from fly_attr import FlyPosture
 
 
 class FlyControl:
@@ -84,7 +86,8 @@ class FlyControl:
                 if formation_cf_uri != status_list[i].uri and status_list[i].current_posture == FlyPosture.hovering:
                     # current_xy_distance = 根号（dx*dy)
                     if (math.sqrt((formation_cf_position[0] - status_list[i].current_position[0]) ** 2
-                                  + (formation_cf_position[1] - status_list[i].current_position[1]) ** 2) < current_xy_distance):
+                                  + (formation_cf_position[1] - status_list[i].current_position[
+                        1]) ** 2) < current_xy_distance):
                         current_xy_distance = math.sqrt(
                             (formation_cf_position[0] - status_list[i].current_position[0]) ** 2 \
                             + (formation_cf_position[1] - status_list[i].current_position[1]) ** 2)
@@ -202,17 +205,111 @@ class CFCollisionAvoidence:
     如果当前无人机状态变为charging，跳出while true循环结束
 
     """
+    GRAVITATION_CONSTANT = 5  # 引力常量
+    REPULSION_CONSTANT = 1  # 斥力常量
+    MIN_SAFETY_DST = 0.4  # 最小安全距离
 
-
-    def __init__(self):
-        pass
-
-    def if_need_bizhang(self):
-        pass
-
-    def start_avoid(self):
+    def __init__(self, cf, status):
         """
-        判断是否需要避障
+        :param cf:
+        :param status:
+        """
+        self._cf = cf
+        self._status = status
+        self._status_lock = self._status._status_lock
+
+    def calculate_gravitation(self, dst):
+        """
+        返回dst对src的引力大小和方向
+        :param dst:终点坐标，三元组
+        :returns:引力大小：float类型
+            引力方向，用方向向量表示
+        """
+        direction = numpy.array([0, 0, 0])
+        current_positon = self._status.current_position
+        distance = math.sqrt((current_positon[0] - dst[0]) ** 2 + (current_positon[1] - dst[1]) ** 2 + (
+                    current_positon[2] - dst[2]) ** 2)
+        gravition = CFCollisionAvoidence.GRAVITATION_CONSTANT * distance
+        direction[0] = (dst[0] - current_positon[0]) / distance
+        direction[1] = (dst[1] - current_positon[1]) / distance
+        direction[2] = (dst[2] - current_positon[2]) / distance
+        return gravition, direction
+
+    def calculate_repulsion(self, dst):
+        """
+        计算当前无人机和其他无人机（通常是临近的无人机无人机）的大小和方向
+        :param dst:位置
+        :returns:斥力大小和方向
+        """
+        repulsion = 0
+        direction = numpy.array([0, 0, 0])
+        current_positon = self._status.current_position
+        distance = math.sqrt((current_positon[0] - dst[0]) ** 2 + (current_positon[1] - dst[1]) ** 2 + (
+                    current_positon[2] - dst[2]) ** 2)
+        if distance > CFCollisionAvoidence.MIN_SAFETY_DST:
+            return repulsion, direction
+        else:
+            repulsion = distance * CFCollisionAvoidence.REPULSION_CONSTANT
+            direction[0] = (dst[0] - current_positon[0]) / distance
+            direction[1] = (dst[1] - current_positon[1]) / distance
+            direction[2] = (dst[2] - current_positon[2]) / distance
+            return repulsion, direction
+
+    def cal_sum_of_repulsion(self, status_list):
+        sum_of_repulsion = numpy.array([0, 0, 0])
+        direction_of_repulsion = numpy.array([0, 0, 0])
+        for index in range(len(status_list)):
+            if self._status.uri != status_list[index].uri:
+                repulsion, direction = self.calculate_repulsion(status_list[index].current_position)
+                sum_of_repulsion = sum_of_repulsion + repulsion * direction  # 计算斥力在三个方向上的和
+        mod_of_repulsion = math.sqrt((sum_of_repulsion ** 2).sum())  # 计算斥力的模
+        direction_of_repulsion = sum_of_repulsion / mod_of_repulsion
+        return mod_of_repulsion, direction_of_repulsion
+
+    def if_need_avoidence(self, status_list):
+        """
+        暂时只通过判断是否收到斥力进行避障
+        :param status_list: 全局飞行状态
         :return:
         """
-        pass
+        sum_of_repulsion = 0
+        for index in range(len(status_list)):
+            if self._status.uri != status_list[index].uri:
+                sum_of_repulsion += self.calculate_repulsion(status_list[index].current_position)[0]
+        if sum_of_repulsion > 0:
+            return True
+        else:
+            return False
+
+    def start_avoid(self, status_list):
+        """
+        判断是否需要避障，执行避障动作
+        :return:
+        """
+        step = 0.05
+        while True:
+            flag = 0
+            if self.if_need_avoidence(status_list):
+                flag = 1
+                direction_of_repulsion = self.cal_sum_of_repulsion(status_list)[1]
+                with self._status_lock:
+                    self._status.current_posture = FlyPosture.avoiding
+                # 执行避障动作
+                current_position = self._status.current_position
+                commander = DuplicablePositionHlCommander(self._cf, current_position[0], current_position[1],
+                                                          current_position[2],
+                                                          0.3, 0.5,
+                                                          controller=DuplicablePositionHlCommander.CONTROLLER_MELLINGER)
+                nextx = current_position[0] + direction_of_repulsion[0] * step
+                nexty = current_position[1] + direction_of_repulsion[1] * step
+                nextz = current_position[2] + direction_of_repulsion[2] * step
+                commander.go_to(nextx, nexty, nextz)
+                # 执行避障动作之后，设置状态为飞行，
+                with self._status_lock:
+                    self._status.current_posture = FlyPosture.flying
+            elif flag == 1:
+            # 不需要避障并且刚刚进行过避障
+            # 判断接下来的轨迹的点和当前点哪个距离终点更近，飞到点集中下一个距离终点更近的点
+
+            elif self._status.current_posture == FlyPosture.changing:
+                break

@@ -22,7 +22,7 @@ class CFSequence:
     def __init__(self, sequence, current_sequence_index=0):
         """
         初始化参数，不允许中途修改
-        :param sequence: 飞行任务队列四元组，飞行具体位置xyz，飞行悬停时间s
+        :param sequence: 飞行任务队列四元组list，飞行具体位置xyz，飞行悬停时间s
         :param uri: 无人机uri
         :param current_sequence_index: 当前飞行任务序列下标
         """
