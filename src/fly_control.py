@@ -228,8 +228,9 @@ class CFCollisionAvoidence:
         direction = numpy.array([0, 0, 0])
         current_positon = self._status.current_position
         distance = math.sqrt((current_positon[0] - dst[0]) ** 2 + (current_positon[1] - dst[1]) ** 2 + (
-                    current_positon[2] - dst[2]) ** 2)
-        gravition = CFCollisionAvoidence.GRAVITATION_CONSTANT * distance
+                current_positon[2] - dst[2]) ** 2)
+        # 引力公式暂定为 Gravition = G / dis**2 引力常数除以距离的平方
+        gravition = CFCollisionAvoidence.GRAVITATION_CONSTANT / (distance ** 2)
         direction[0] = (dst[0] - current_positon[0]) / distance
         direction[1] = (dst[1] - current_positon[1]) / distance
         direction[2] = (dst[2] - current_positon[2]) / distance
@@ -245,11 +246,12 @@ class CFCollisionAvoidence:
         direction = numpy.array([0, 0, 0])
         current_positon = self._status.current_position
         distance = math.sqrt((current_positon[0] - dst[0]) ** 2 + (current_positon[1] - dst[1]) ** 2 + (
-                    current_positon[2] - dst[2]) ** 2)
+                current_positon[2] - dst[2]) ** 2)
         if distance > CFCollisionAvoidence.MIN_SAFETY_DST:
             return repulsion, direction
         else:
-            repulsion = distance * CFCollisionAvoidence.REPULSION_CONSTANT
+            # 斥力公式暂定为 Repulsion = R / dis**2
+            repulsion = CFCollisionAvoidence.REPULSION_CONSTANT / (distance ** 2)
             direction[0] = (dst[0] - current_positon[0]) / distance
             direction[1] = (dst[1] - current_positon[1]) / distance
             direction[2] = (dst[2] - current_positon[2]) / distance
@@ -262,7 +264,7 @@ class CFCollisionAvoidence:
             if self._status.uri != status_list[index].uri:
                 repulsion, direction = self.calculate_repulsion(status_list[index].current_position)
                 sum_of_repulsion = sum_of_repulsion + repulsion * direction  # 计算斥力在三个方向上的和
-        mod_of_repulsion = math.sqrt((sum_of_repulsion ** 2).sum())  # 计算斥力的模
+        mod_of_repulsion = math.sqrt((sum_of_repulsion ** 2).sum())  # 计算斥力的模 三个方向的平方和再开方
         direction_of_repulsion = sum_of_repulsion / mod_of_repulsion
         return mod_of_repulsion, direction_of_repulsion
 
@@ -310,6 +312,6 @@ class CFCollisionAvoidence:
             elif flag == 1:
             # 不需要避障并且刚刚进行过避障
             # 判断接下来的轨迹的点和当前点哪个距离终点更近，飞到点集中下一个距离终点更近的点
-
+            pass
             elif self._status.current_posture == FlyPosture.changing:
                 break
