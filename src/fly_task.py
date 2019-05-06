@@ -95,6 +95,7 @@ class CFFlyTask:
     def formation_fly_to_charge(self, start, end):  # 相比run_single_trajectory不考虑调度情况，因为本身执行的就是调度任务，其余逻辑相同相同
         trajectory = CFTrajectoryFactory.line(start, end)
         commander = DuplicablePositionHlCommander(self._cf)
+        commander.take_off()
         current_point = 0
         while True:
             point = trajectory.get_next_point()
@@ -105,7 +106,7 @@ class CFFlyTask:
                     time.sleep(0.3)
                     continue
                 else:
-                    commander.go_to(current_point)
+                    commander.go_to(current_point[0],current_point[1],current_point[2])
                     time.sleep(0.1)
             else:
                 while CFFlyTask.not_close_enough(self._status, current_point):
@@ -113,7 +114,7 @@ class CFFlyTask:
                         time.sleep(0.1)
                         continue
                     else:
-                        commander.go_to(current_point)
+                        commander.go_to(current_point[0],current_point[1],current_point[2])
                         time.sleep(0.1)
                 return
 
@@ -121,6 +122,7 @@ class CFFlyTask:
         if trajectory.posture == FlyPosture.hovering:
             return
         commander = DuplicablePositionHlCommander(self._cf)
+        commander.take_off()
         current_point = 0
         while True:
             point = trajectory.get_next_point()
@@ -137,7 +139,7 @@ class CFFlyTask:
                         self._status.current_posture = FlyPosture.charging
                     return
                 else:
-                    commander.go_to(current_point)
+                    commander.go_to(current_point[0],current_point[1],current_point[2])
                     time.sleep(0.1)
             else:
                 while CFFlyTask.not_close_enough(self._status, current_point):  # 有可能避障完成之后已经便利到终点，但是偏离实际位置，所以还是要修正的，修正过程中也会有避障可能
@@ -151,7 +153,7 @@ class CFFlyTask:
                             self._status.current_posture = FlyPosture.charging
                         return
                     else:
-                        commander.go_to(current_point)
+                        commander.go_to(current_point[0],current_point[1],current_point[2])
                         time.sleep(0.1)
                 return
 
@@ -197,7 +199,7 @@ class CFTrajectory:
             return next_point
 
     def get_current_end_point(self):
-        for end_point_index in self._end_point_index_list:
+        for end_point_index in range(len(self._end_point_index_list)):
             if end_point_index >= self._current_point_index:
                 return self._point_list[end_point_index]
 

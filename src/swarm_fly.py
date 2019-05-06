@@ -25,7 +25,7 @@ from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
 # Change uris and sequences according to your setup
 URI1 = 'radio://0/10/2M/E7E7E7E7E7'
-URI2 = 'radio://0/20/2M/E7E7E7E7E7'
+URI2 = 'radio://0/00/2M/E7E7E7E7E7'
 URI3 = 'radio://0/40/2M/E7E7E7E7E7'
 URI4 = 'radio://0/60/2M/E7E7E7E7E7'
 
@@ -58,6 +58,7 @@ cf_status_lock2 = threading.Lock()
 # CFStatus, in the final version we may use a list to store it
 status1 = CFStatus(URI1, FlyPosture.flying, cf_status_lock1)  # temp
 status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)  # temp
+
 status_list = [status1, status2]  # temp
 #  status3 = CFStatus(URI3, FlyPosture.charging, cf_status_lock3)  # temp
 
@@ -70,7 +71,7 @@ switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]
 # 被CFFlyTask当作静态成员供所有无人机查找
 
 DuplicablePositionHlCommander.set_class_status_list(status_list)
-
+CFFlyTask.set_switch_pair_list(switch_pair_list)
 
 # used to pass param to the parallel thread
 cf_args = {
@@ -215,15 +216,19 @@ def run_sequence(scf, cf_arg):
         CFDispatch.add_callback_to_singlecf(cf.link_uri, scf, cf_arg)
         global status_list
         global end_all
-        if cf_arg[1].current_posture == FlyPosture.flying:
-              flying_cf_avoidance = CFCollisionAvoidance(cf, cf_arg[1])
-              flying_cf_avoidance.start_avoid(status_list)
+        for sta in status_list:
+            print(sta.current_position)
+        #if cf_arg[1].current_posture == FlyPosture.flying:
+         #     flying_cf_avoidance = CFCollisionAvoidance(cf, cf_arg[1])
+          #    flying_cf_avoidance.start_avoid(status_list)
+        print(cf.link_uri,'enter cf thread while true')
         while True:
             if end_all:
                 break
             if is_all_end(status_list):
                 break
             if cf_arg[1].current_posture == FlyPosture.flying:
+                print(cf.link_uri,'is going to run')
                 cf_arg[0].run()
             elif cf_arg[1].current_posture == FlyPosture.charging:
                 time.sleep(5)
@@ -299,4 +304,4 @@ if __name__ == '__main__':
         scfs = swarm.get_all_scfs()
 
         swarm.parallel_unblock(run_sequence, args_dict=cf_args)
-        global_dispatch()
+        #global_dispatch()

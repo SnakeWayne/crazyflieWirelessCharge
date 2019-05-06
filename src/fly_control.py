@@ -7,7 +7,7 @@
 import copy
 import math
 import time
-
+import operator
 import numpy
 from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 from fly_attr import FlyPosture
@@ -264,8 +264,10 @@ class CFCollisionAvoidance:
     def cal_sum_of_repulsion(self, status_list):
         sum_of_repulsion = numpy.array([0, 0, 0])
         direction_of_repulsion = numpy.array([0, 0, 0])
+        print('cf',self._status.uri,'is calculating the repulsion')
         for index in range(len(status_list)):
-            if self._status.uri != status_list[index].uri:
+            if self._status.uri != status_list[index].uri and (not operator.eq(status_list[index].current_position, [0,0,0])):
+                print(status_list[index].uri,'s current position is',status_list[index].current_position)
                 repulsion, direction = self.calculate_repulsion(status_list[index].current_position)
                 sum_of_repulsion = sum_of_repulsion + repulsion * direction  # 计算斥力在三个方向上的和
         mod_of_repulsion = math.sqrt((sum_of_repulsion ** 2).sum())  # 计算斥力的模 三个方向的平方和再开方
@@ -324,5 +326,9 @@ class CFCollisionAvoidance:
             elif self._status.current_posture == FlyPosture.over:
                 break
 
-    def start_void(self, status_list):
-        Thread(target=self.start_avoid_func, args=status_list).start()
+    def start_avoid(self, status_list):
+        for i in range(10):
+            print(i)
+            for sta in status_list:
+                print(sta.uri,sta.current_position)
+        #Thread(target=self.start_avoid_func, args=(status_list, )).start()
