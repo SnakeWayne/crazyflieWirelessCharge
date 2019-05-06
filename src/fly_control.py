@@ -207,7 +207,9 @@ class CFCollisionAvoidence:
     """
     GRAVITATION_CONSTANT = 5  # 引力常量
     REPULSION_CONSTANT = 1  # 斥力常量
-    MIN_SAFETY_DST = 0.4  # 最小安全距离
+    MIN_SAFETY_XY_DST = 0.3  # xy轴最小安全距离
+    MIN_SAFETY_Z_DST = 0.6  # z轴最小安全距离
+    MIN_SAFETY_DST = 0.6
 
     def __init__(self, cf, status):
         """
@@ -225,12 +227,13 @@ class CFCollisionAvoidence:
         :returns:引力大小：float类型
             引力方向，用方向向量表示
         """
+        m = 2
         direction = numpy.array([0, 0, 0])
         current_positon = self._status.current_position
         distance = math.sqrt((current_positon[0] - dst[0]) ** 2 + (current_positon[1] - dst[1]) ** 2 + (
                 current_positon[2] - dst[2]) ** 2)
-        # 引力公式暂定为 Gravition = G / dis**2 引力常数除以距离的平方
-        gravition = CFCollisionAvoidence.GRAVITATION_CONSTANT / (distance ** 2)
+        # 引力公式暂定为 Gravition = G * dis**m 引力常数乘以距离的m次方
+        gravition = CFCollisionAvoidence.GRAVITATION_CONSTANT * (distance ** m)
         direction[0] = (dst[0] - current_positon[0]) / distance
         direction[1] = (dst[1] - current_positon[1]) / distance
         direction[2] = (dst[2] - current_positon[2]) / distance
@@ -270,15 +273,20 @@ class CFCollisionAvoidence:
 
     def if_need_avoidence(self, status_list):
         """
-        暂时只通过判断是否收到斥力进行避障
+        判断圆柱区域内有没有其他飞机
         :param status_list: 全局飞行状态
         :return:
         """
-        sum_of_repulsion = 0
+        unsafe_num = 0
         for index in range(len(status_list)):
-            if self._status.uri != status_list[index].uri:
-                sum_of_repulsion += self.calculate_repulsion(status_list[index].current_position)[0]
-        if sum_of_repulsion > 0:
+            if self._status.uri != status_list[index].uri and status_list[index].current_posture != FlyPosture.charging:
+                xy_distance = math.sqrt(
+                    (self._status.current_position[0] - status_list[index].current_position[0]) ** 2 +
+                    (self._status.current_position[1] - status_list[index].current_position[1]) ** 2)
+                z_distance = abs(self._status.current_position[2] - status_list[index].current_position[2])
+                if xy_distance < CFCollisionAvoidence.MIN_SAFETY_XY_DST and z_distance < CFCollisionAvoidence.MIN_SAFETY_Z_DST:
+                    unsafe_num += 1
+        if unsafe_num > 0:
             return True
         else:
             return False
@@ -310,8 +318,8 @@ class CFCollisionAvoidence:
                 with self._status_lock:
                     self._status.current_posture = FlyPosture.flying
             elif flag == 1:
-            # 不需要避障并且刚刚进行过避障
-            # 判断接下来的轨迹的点和当前点哪个距离终点更近，飞到点集中下一个距离终点更近的点
-            pass
-            elif self._status.current_posture == FlyPosture.changing:
+                # 不需要避障并且刚刚进行过避障
+                # 判断接下来的轨迹的点和当前点哪个距离终点更近，飞到点集中下一个距离终点更近的点
+                pass
+            elif self._status.current_posture == FlyPosture.charging:
                 break
