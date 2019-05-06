@@ -31,6 +31,9 @@ class CFFlyTask:
         self._trajectory_index = trajectory_index
         self._status_lock = self._status.status_lock
 
+    def set_cf_afterword(self, cf):
+        self._cf = cf
+
     @staticmethod
     def set_switch_pair_list(switch_pair_list):
         CFFlyTask._switch_pair_list = switch_pair_list
