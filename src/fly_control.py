@@ -11,6 +11,7 @@ import time
 import numpy
 from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 from fly_attr import FlyPosture
+from threading import Thread
 
 
 class FlyControl:
@@ -268,7 +269,8 @@ class CFCollisionAvoidance:
                 repulsion, direction = self.calculate_repulsion(status_list[index].current_position)
                 sum_of_repulsion = sum_of_repulsion + repulsion * direction  # 计算斥力在三个方向上的和
         mod_of_repulsion = math.sqrt((sum_of_repulsion ** 2).sum())  # 计算斥力的模 三个方向的平方和再开方
-        direction_of_repulsion = sum_of_repulsion / mod_of_repulsion
+        if mod_of_repulsion != 0:
+            direction_of_repulsion = sum_of_repulsion / mod_of_repulsion
         return mod_of_repulsion, direction_of_repulsion
 
     def if_need_avoidance(self, status_list):
@@ -291,7 +293,7 @@ class CFCollisionAvoidance:
         else:
             return False
 
-    def start_avoid(self, status_list):
+    def start_avoid_func(self, status_list):
         """
         判断是否需要避障，执行避障动作
         :return:
@@ -321,3 +323,6 @@ class CFCollisionAvoidance:
                 break
             elif self._status.current_posture == FlyPosture.over:
                 break
+
+    def start_void(self, status_list):
+        Thread(target=self.start_avoid_func, args=status_list).start()
