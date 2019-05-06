@@ -198,7 +198,7 @@ class FlyControl:
         # 传递sequence
 
 
-class CFCollisionAvoidence:
+class CFCollisionAvoidance:
     """
     用于在开始飞行之后开启avoid的新线程，在无人机的整个任务内不断关注是否需要避障
     以及如何避障
@@ -230,7 +230,7 @@ class CFCollisionAvoidence:
         distance = math.sqrt((current_positon[0] - dst[0]) ** 2 + (current_positon[1] - dst[1]) ** 2 + (
                 current_positon[2] - dst[2]) ** 2)
         # 引力公式暂定为 Gravition = G / dis**2 引力常数除以距离的平方
-        gravition = CFCollisionAvoidence.GRAVITATION_CONSTANT / (distance ** 2)
+        gravition = CFCollisionAvoidance.GRAVITATION_CONSTANT / (distance ** 2)
         direction[0] = (dst[0] - current_positon[0]) / distance
         direction[1] = (dst[1] - current_positon[1]) / distance
         direction[2] = (dst[2] - current_positon[2]) / distance
@@ -247,11 +247,11 @@ class CFCollisionAvoidence:
         current_positon = self._status.current_position
         distance = math.sqrt((current_positon[0] - dst[0]) ** 2 + (current_positon[1] - dst[1]) ** 2 + (
                 current_positon[2] - dst[2]) ** 2)
-        if distance > CFCollisionAvoidence.MIN_SAFETY_DST:
+        if distance > CFCollisionAvoidance.MIN_SAFETY_DST:
             return repulsion, direction
         else:
             # 斥力公式暂定为 Repulsion = R / dis**2
-            repulsion = CFCollisionAvoidence.REPULSION_CONSTANT / (distance ** 2)
+            repulsion = CFCollisionAvoidance.REPULSION_CONSTANT / (distance ** 2)
             direction[0] = (dst[0] - current_positon[0]) / distance
             direction[1] = (dst[1] - current_positon[1]) / distance
             direction[2] = (dst[2] - current_positon[2]) / distance
