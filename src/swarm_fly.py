@@ -14,7 +14,7 @@ from cflib.crazyflie.syncLogger import SyncLogger
 from cf_dispatch import CFDispatch
 from customcflib.public_swarm import PublicSWarm
 from fly_attr import FlyPosture
-from fly_control import FlyControl
+from fly_control import CFCollisionAvoidance
 from fly_attr import CFSequence
 from fly_attr import CFStatus
 from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
@@ -192,8 +192,8 @@ def land(cf, position):
     # since the message queue is not flushed before closing
     time.sleep(0.1)
 
-def is_all_end(status_list):
-    for status in status_list:
+def is_all_end(local_status_list):
+    for status in local_status_list:
         if status.current_posture != FlyPosture.charging or status.current_posture != FlyPosture.over:
             return False
     return True
@@ -212,7 +212,8 @@ def run_sequence(scf, cf_arg):
         global status_list
         global end_all
         if cf_arg[1].current_posture == FlyPosture.flying:
-              # 注册avoiding线程
+              flying_cf_avoidance = CFCollisionAvoidance(cf, cf_arg[1])
+              flying_cf_avoidance.start_avoid(status_list)
         while True:
             if end_all:
                 break
@@ -243,7 +244,7 @@ def global_dispatch():
             if formation_cf_uri == 'radio':  # temp define invalid uri
                 continue
             elif formation_cf_uri == 'abort':
-                print('we should land')  # flycontrol need
+                print('we should land')  # fly control need
                 # tell every one to land, maybe set the current sequence to max for all
             else:
                 print('switching')
@@ -267,7 +268,8 @@ def global_dispatch():
                 cf_args[charging_cf_uri][0].copy(cf_args[formation_cf_uri][0])
                 with charging_status.status_lock:  # 更新充电无人机状态，在无人机线程中可以唤醒
                     charging_status.current_posture = FlyPosture.flying
-                    #  注册avoiding线程
+                    charging_cf_avoidance = CFCollisionAvoidance(charging_cf, cf_args[charging_cf_uri][1])
+                    charging_cf_avoidance.start_avoid(status_list)
         except KeyboardInterrupt:
             print('ctrl+c incoming')
             current_formation_number = 0

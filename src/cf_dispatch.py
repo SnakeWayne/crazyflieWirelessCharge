@@ -10,7 +10,7 @@ from cflib.crazyflie.syncLogger import SyncLogger
 from fly_attr import FlyPosture
 
 
-class CFDispatch():
+class CFDispatch:
 
     _n = 0  # 用于判断当前调度情况
 

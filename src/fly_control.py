@@ -198,7 +198,7 @@ class FlyControl:
         # 传递sequence
 
 
-class CFCollisionAvoidence:
+class CFCollisionAvoidance:
     """
     用于在开始飞行之后开启avoid的新线程，在无人机的整个任务内不断关注是否需要避障
     以及如何避障
@@ -218,7 +218,7 @@ class CFCollisionAvoidence:
         """
         self._cf = cf
         self._status = status
-        self._status_lock = self._status._status_lock
+        self._status_lock = self._status.status_lock
 
     def calculate_gravitation(self, dst):
         """
@@ -233,7 +233,7 @@ class CFCollisionAvoidence:
         distance = math.sqrt((current_positon[0] - dst[0]) ** 2 + (current_positon[1] - dst[1]) ** 2 + (
                 current_positon[2] - dst[2]) ** 2)
         # 引力公式暂定为 Gravition = G * dis**m 引力常数乘以距离的m次方
-        gravition = CFCollisionAvoidence.GRAVITATION_CONSTANT * (distance ** m)
+        gravition = CFCollisionAvoidance.GRAVITATION_CONSTANT * (distance ** m)
         direction[0] = (dst[0] - current_positon[0]) / distance
         direction[1] = (dst[1] - current_positon[1]) / distance
         direction[2] = (dst[2] - current_positon[2]) / distance
@@ -250,11 +250,11 @@ class CFCollisionAvoidence:
         current_positon = self._status.current_position
         distance = math.sqrt((current_positon[0] - dst[0]) ** 2 + (current_positon[1] - dst[1]) ** 2 + (
                 current_positon[2] - dst[2]) ** 2)
-        if distance > CFCollisionAvoidence.MIN_SAFETY_DST:
+        if distance > CFCollisionAvoidance.MIN_SAFETY_DST:
             return repulsion, direction
         else:
             # 斥力公式暂定为 Repulsion = R / dis**2
-            repulsion = CFCollisionAvoidence.REPULSION_CONSTANT / (distance ** 2)
+            repulsion = CFCollisionAvoidance.REPULSION_CONSTANT / (distance ** 2)
             direction[0] = (dst[0] - current_positon[0]) / distance
             direction[1] = (dst[1] - current_positon[1]) / distance
             direction[2] = (dst[2] - current_positon[2]) / distance
@@ -271,7 +271,7 @@ class CFCollisionAvoidence:
         direction_of_repulsion = sum_of_repulsion / mod_of_repulsion
         return mod_of_repulsion, direction_of_repulsion
 
-    def if_need_avoidence(self, status_list):
+    def if_need_avoidance(self, status_list):
         """
         判断圆柱区域内有没有其他飞机
         :param status_list: 全局飞行状态
@@ -284,7 +284,7 @@ class CFCollisionAvoidence:
                     (self._status.current_position[0] - status_list[index].current_position[0]) ** 2 +
                     (self._status.current_position[1] - status_list[index].current_position[1]) ** 2)
                 z_distance = abs(self._status.current_position[2] - status_list[index].current_position[2])
-                if xy_distance < CFCollisionAvoidence.MIN_SAFETY_XY_DST and z_distance < CFCollisionAvoidence.MIN_SAFETY_Z_DST:
+                if xy_distance < CFCollisionAvoidance.MIN_SAFETY_XY_DST and z_distance < CFCollisionAvoidance.MIN_SAFETY_Z_DST:
                     unsafe_num += 1
         if unsafe_num > 0:
             return True
@@ -299,7 +299,7 @@ class CFCollisionAvoidence:
         step = 0.05
         while True:
 
-            if self.if_need_avoidence(status_list):
+            if self.if_need_avoidance(status_list):
                 direction_of_repulsion = self.cal_sum_of_repulsion(status_list)[1]
                 with self._status_lock:
                     self._status.current_posture = FlyPosture.avoiding
@@ -314,7 +314,7 @@ class CFCollisionAvoidence:
                 nextz = current_position[2] + direction_of_repulsion[2] * step
                 commander.go_to(nextx, nexty, nextz)
                 # 执行避障动作之后继续判断是否需要避障
-            elif (not self.if_need_avoidence(status_list)) and self._status.current_posture == FlyPosture.avoiding:
+            elif (not self.if_need_avoidance(status_list)) and self._status.current_posture == FlyPosture.avoiding:
                 with self._status_lock:
                     self._status.current_posture = FlyPosture.flying
             elif self._status.current_posture == FlyPosture.charging:
