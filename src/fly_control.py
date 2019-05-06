@@ -298,9 +298,8 @@ class CFCollisionAvoidence:
         """
         step = 0.05
         while True:
-            flag = 0
+
             if self.if_need_avoidence(status_list):
-                flag = 1
                 direction_of_repulsion = self.cal_sum_of_repulsion(status_list)[1]
                 with self._status_lock:
                     self._status.current_posture = FlyPosture.avoiding
@@ -314,12 +313,11 @@ class CFCollisionAvoidence:
                 nexty = current_position[1] + direction_of_repulsion[1] * step
                 nextz = current_position[2] + direction_of_repulsion[2] * step
                 commander.go_to(nextx, nexty, nextz)
-                # 执行避障动作之后，设置状态为飞行，
+                # 执行避障动作之后继续判断是否需要避障
+            elif (not self.if_need_avoidence(status_list)) and self._status.current_posture == FlyPosture.avoiding:
                 with self._status_lock:
                     self._status.current_posture = FlyPosture.flying
-            elif flag == 1:
-                # 不需要避障并且刚刚进行过避障
-                # 判断接下来的轨迹的点和当前点哪个距离终点更近，飞到点集中下一个距离终点更近的点
-                pass
             elif self._status.current_posture == FlyPosture.charging:
+                break
+            elif self._status.current_posture == FlyPosture.over:
                 break
