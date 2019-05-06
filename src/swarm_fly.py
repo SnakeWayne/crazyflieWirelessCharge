@@ -241,8 +241,6 @@ def global_dispatch():
     while True:
         try:
             time.sleep(10)
-            if current_formation_number == 0:
-                break
             formation_cf_uri, charging_cf_uri = CFDispatch.calculate_how_to_dispatch(status_list)
 
             if formation_cf_uri == 'radio':  # temp define invalid uri

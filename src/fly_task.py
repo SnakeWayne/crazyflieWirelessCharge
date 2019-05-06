@@ -259,6 +259,7 @@ class CFTrajectoryFactory:
             if math.sqrt(x_step**2+y_step**2+z_step**2) > vector_length:
                 break
             point_list.append([start_x+x_step, start_y+y_step, start_z+z_step])
+            ratio += 1
         trajectory = CFTrajectory(FlyPosture.flying, point_list)
         return trajectory
 
