@@ -18,7 +18,7 @@ class DuplicablePositionHlCommander(PositionHlCommander):
 
     def __init__(self, crazyflie,
                  x=0.0, y=0.0, z=0.0,
-                 default_velocity=0.5,
+                 default_velocity=20,
                  default_height=0.5,
                  controller=CONTROLLER_PID):
         """
@@ -58,12 +58,15 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         """
         DuplicablePositionHlCommander._status_list = status_list
 
+    def set_cf_status(self, status):
+        self.__status = status
+
     def _get_status(self, cf):
         for i in range(len(DuplicablePositionHlCommander._status_list)):
             if DuplicablePositionHlCommander._status_list[i].uri == cf.link_uri:
                 return DuplicablePositionHlCommander._status_list[i]
 
-    def take_off(self, height=DEFAULT, velocity=DEFAULT):
+    def take_off(self, height=DEFAULT, velocity=0.5):
         """
         Takes off, that is starts the motors, goes straight up and hovers.
         Do not call this function if you use the with keyword. Take off is
@@ -83,18 +86,25 @@ class DuplicablePositionHlCommander(PositionHlCommander):
 
         if not self._cf.is_connected():
             raise Exception('Crazyflie is not connected')
+        
+        print('inside take_off func')
 
         self._is_flying = True
         self._reset_position_estimator()
+        print('complete position estimator')
         self._activate_controller()
+        print('complete active controller')
         self._activate_high_level_commander()
+        print('complete active hl_commander')
         self._hl_commander = self._cf.high_level_commander
         height = self._height(height)
         print('current height is', height)
 
         duration_s = height / self._velocity(velocity)
+        print('duration = ',duration_s)
         self._hl_commander.takeoff(height, duration_s)
-        time.sleep(duration_s)
+        print('complete take of with takeoff')
+        time.sleep(0.1)
         self._z = height
 
     def land(self, velocity=DEFAULT):
@@ -114,7 +124,7 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         self._hl_commander.stop()
         self._is_flying = False
 
-    def eventually_land(self, velocity=DEFAULT):
+    def eventually_land(self, velocity=0.5):
         """
         Go straight down and turn off the motors.
 
@@ -124,6 +134,7 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         :param velocity: The velocity (meters/second) when going down
         :return:
         """
+        print('inside everntually land')
         with self.__status.status_lock:
             self.__status.current_posture = FlyPosture.hovering
         duration_s = self.__status.current_position[2] / self._velocity(velocity)
@@ -193,11 +204,14 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         return self.__status.current_position[0], self.__status.current_position[1], self.__status.current_position[2]
 
     def _reset_position_estimator(self):
+        print('inside position estimator')
         self._cf.param.set_value('kalman.initialX', '{:.2f}'.format(self.__status.current_position[0]))
         self._cf.param.set_value('kalman.initialY', '{:.2f}'.format(self.__status.current_position[1]))
         self._cf.param.set_value('kalman.initialZ', '{:.2f}'.format(self.__status.current_position[2]))
-
+        print('complete set_value initialZ')
         self._cf.param.set_value('kalman.resetEstimation', '1')
         time.sleep(0.1)
+        print('complete kalman.resetEstimation 1')
         self._cf.param.set_value('kalman.resetEstimation', '0')
-        time.sleep(2)
+        print('complete kalman.resetEstimation 0')
+        time.sleep(0.2)

@@ -24,48 +24,24 @@ from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
 
 # Change uris and sequences according to your setup
-URI1 = 'radio://0/10/2M/E7E7E7E7E7'
-URI2 = 'radio://0/00/2M/E7E7E7E7E7'
-URI3 = 'radio://0/40/2M/E7E7E7E7E7'
-URI4 = 'radio://0/60/2M/E7E7E7E7E7'
+URI1 = 'radio://0/20/2M/E7E7E7E7E7'
 
 end_all = False
 
-# CFSequences, in the final version we may use a list to store it
-sequence1 = CFSequence([
-[0.5, 0.5, 0.5,2],
-[0.5, 0.5, 1,2],
-[0.5, 0.5, 1,2],
-[0.5, 0.5, 0.5,2],
-[0.5, 0.5, 1,2],
-[0.5, 0.5, 0.5,2],
-[0.5, 0.5, 1,2],
-])  # temp
-sequence2 = CFSequence([
-[0, 0, 0.5,2],
-[0, 0, 1,2],
-[0, 0, 1,2],
-[0, 0, 0.5,2],
-[0, 0, 1,2],
-[0, 0, 0.5,2],
-[0, 0, 1,2],
-])  # temp
-
 cf_status_lock1 = threading.Lock()
-cf_status_lock2 = threading.Lock()
 # cf_status_lock3 = threading.Lock()  # 访问status.current_posture时所需要的锁
 
 # CFStatus, in the final version we may use a list to store it
 status1 = CFStatus(URI1, FlyPosture.flying, cf_status_lock1)  # temp
-status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)  # temp
+#status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)  # temp
 
-status_list = [status1, status2]  # temp
+status_list = [status1]  # temp
 #  status3 = CFStatus(URI3, FlyPosture.charging, cf_status_lock3)  # temp
 
-task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.line([0,0,1],[1,1,1])])
-task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([1,1,1],[0,0,1])])
+task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.arch([1,1,1],[-1,-1,1],[0,0,1]),CFTrajectoryFactory.arch([-1,-1,1],[1,1,1],[0,0,1])])
+#task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([1,1,1],[0,0,1])])
 
-task_list = [task1, task2]  # temp
+task_list = [task1]  # temp
 
 switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]]}  # 主线程在判断产生充电无人机时需要调度的无人机的信息位，
 # 被CFFlyTask当作静态成员供所有无人机查找
@@ -76,13 +52,13 @@ CFFlyTask.set_switch_pair_list(switch_pair_list)
 # used to pass param to the parallel thread
 cf_args = {
     URI1: [[task1, status1, cf_status_lock1]],
-    URI2: [[task2, status2, cf_status_lock2]],
+    #URI2: [[task2, status2, cf_status_lock2]],
     }
 
 # List of URIs, comment the one you do not want to fly
 uris = {
     URI1,
-    URI2,
+    #URI2,
 }
 
 # Dict of scfs
@@ -292,14 +268,14 @@ if __name__ == '__main__':
         # probably not needed. The Kalman filter will have time to converge
         # any way since it takes a while to start them all up and connect. We
         # keep the code here to illustrate how to do it.
-        swarm.parallel(reset_estimator)
+        #swarm.parallel(reset_estimator)
 
         # The current values of all parameters are downloaded as a part of the
         # connections sequence. Since we have 10 copters this is clogging up
         # communication and we have to wait for it to finish before we start
         # flying.
         print('Waiting for parameters to be downloaded...')
-        swarm.parallel(wait_for_param_download)
+        #swarm.parallel(wait_for_param_download)
 
         scfs = swarm.get_all_scfs()
 
