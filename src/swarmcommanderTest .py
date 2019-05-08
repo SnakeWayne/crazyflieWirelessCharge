@@ -27,7 +27,7 @@ URI2 = 'radio://0/00/2M/E7E7E7E7E7'
 
 
 
-uris = [URI1,URI2]
+uris = [URI1]
 
 def is_all_end(local_status_list):
     for status in local_status_list:
@@ -36,8 +36,6 @@ def is_all_end(local_status_list):
     return True
 
 
-def position_callback(timestamp, data, logconf):
-    pass
 def update_cfstatus(timestamp, data, logconf, status, uri):
     status.current_position[0] = data['kalman.stateX'] 
     status.current_position[1] = data['kalman.stateY'] 
@@ -63,25 +61,20 @@ def add_callback_to_singlecf(uri, scf, status):
 switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]]}
 
 cf_status_lock1 = threading.Lock()
-cf_status_lock2 = threading.Lock()
 
 status1 = CFStatus(URI1, FlyPosture.flying, cf_status_lock1)
-status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)
 
 
 
-status_list = [status1,status2]
+status_list = [status1]
 CFFlyTask.set_switch_pair_list(switch_pair_list)
-task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.arch([1,1,1],[-1,-1,1],[0,0,1]),CFTrajectoryFactory.arch([-1,-1,1],[1,1,1],[0,0,1])])
-task2 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.arch([-1,-1,1],[1,1,1],[0,0,1]),CFTrajectoryFactory.arch([1,1,1],[-1,-1,1],[0,0,1])])
+task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.arch([1,1,1],[-1,-1,1],[0,0,1]), CFTrajectoryFactory.arch([-1,-1,1],[1,1,1],[0,0,1])])
 
-task_list = [task1,task2]
+task_list = [task1]
 DuplicablePositionHlCommander.set_class_status_list(status_list)
 
 cf_args = {
     URI1:[[task1,status1,cf_status_lock1]],
-    URI2:[[task2,status2,cf_status_lock2]]
-
     }
 
 
@@ -103,6 +96,7 @@ def run_sequence(scf, cf_arg):
     cf.param.set_value('flightmode.posSet', '1')
     cf_arg[0].set_cf_afterword(cf)
     add_callback_to_singlecf(cf.link_uri, scf, cf_arg[1])
+    cf_arg[0].run()
     
 
 if __name__ == '__main__':
