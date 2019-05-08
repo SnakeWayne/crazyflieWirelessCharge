@@ -18,7 +18,7 @@ class DuplicablePositionHlCommander(PositionHlCommander):
 
     def __init__(self, crazyflie,
                  x=0.0, y=0.0, z=0.0,
-                 default_velocity=20,
+                 default_velocity=10,
                  default_height=0.5,
                  controller=CONTROLLER_PID):
         """

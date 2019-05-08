@@ -13,6 +13,7 @@ from cflib.crazyflie.syncLogger import SyncLogger
 from cflib.crazyflie.__init__ import Crazyflie
 
 from cf_dispatch import CFDispatch
+from fly_task import CFTrajectory
 from fly_task import CFTrajectoryFactory
 from fly_task import CFFlyTask
 from customcflib.public_swarm import PublicSWarm
@@ -22,39 +23,43 @@ from fly_attr import CFSequence
 from fly_attr import CFStatus
 from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
-
-end_all = False
-
-URI1 = 'radio://0/20/2M/E7E7E7E7E7'
-URI2 = 'radio://0/10/2M/E7E7E7E7E7'
+URI1 = 'radio://0/10/2M/E7E7E7E7E7'
+#URI2 = 'radio://0/10/2M/E7E7E7E7E7'
 
 
 
-uris = [URI1,URI2]
+uris = [
+        URI1,
+        #URI2
+        ]
 switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]]}
 CFFlyTask.set_switch_pair_list(switch_pair_list)
 
 
 cf_status_lock1 = threading.Lock()
-cf_status_lock2 = threading.Lock()
+#cf_status_lock2 = threading.Lock()
 
 status1 = CFStatus(URI1, FlyPosture.flying, cf_status_lock1)
-status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)
-status_list = [status1,status2]
+#status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)
+status_list = [status1,
+        #status2
+        ]
 DuplicablePositionHlCommander.set_class_status_list(status_list)
 
 
 
 
-task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.add(CFTrajectoryFactory.arch([1,1,1],[-1,-1,1],[0,0,1]), CFTrajectoryFactory.arch([-1,-1,1],[1,1,1],[0,0,1]))])
-task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.add(CFTrajectoryFactory.arch([-1,-1,1],[1,1,1],[0,0,1]), CFTrajectoryFactory.arch([1,1,1],[-1,-1,1],[0,0,1]))])
-task_list = [task1,task2]
+task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.line([0.5,1,1],[0.5,-1,1])])
+#task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([0.5,-1,1],[0.5,1,1])])
+task_list = [task1,
+        #task2
+        ]
 
 
 
 cf_args = {
     URI1:[[task1,status1,cf_status_lock1]],
-    URI2:[[task2,status2,cf_status_lock2]],
+    #URI2:[[task2,status2,cf_status_lock2]],
     }
 
 
@@ -143,7 +148,7 @@ def reset_estimator(scf):
 
 def is_all_end(local_status_list):
     for status in local_status_list:
-        if status.current_posture != FlyPosture.charging or status.current_posture != FlyPosture.over:
+        if status.current_posture == FlyPosture.flying:
             return False
     return True
 
@@ -161,15 +166,11 @@ def run_sequence(scf, cf_arg):
         CFDispatch.add_callback_to_singlecf(cf.link_uri, scf, cf_arg)
         global status_list
         global end_all
-        for sta in status_list:
-            print(sta.current_position)
-        #if cf_arg[1].current_posture == FlyPosture.flying:
-         #     flying_cf_avoidance = CFCollisionAvoidance(cf, cf_arg[1])
-          #    flying_cf_avoidance.start_avoid(status_list)
-        print(cf.link_uri,'enter cf thread while true')
+        if cf_arg[1].current_posture == FlyPosture.flying:
+              flying_cf_avoidance = CFCollisionAvoidance(cf, cf_arg[1])
+              flying_cf_avoidance.start_avoid(status_list)
+        #print(cf.link_uri,'enter cf thread while true')
         while True:
-            if end_all:
-                break
             if is_all_end(status_list):
                 break
             if cf_arg[1].current_posture == FlyPosture.flying:
@@ -233,6 +234,7 @@ if __name__ == '__main__':
     cflib.crtp.init_drivers(enable_debug_driver=False)
     factory = CachedCfFactory(rw_cache='./cache')
     with PublicSWarm(uris, factory=factory) as swarm:
+    
         # If the copters are started in their correct positions this is
         # probably not needed. The Kalman filter will have time to converge
         # any way since it takes a while to start them all up and connect. We
@@ -248,5 +250,13 @@ if __name__ == '__main__':
 
         scfs = swarm.get_all_scfs()
 
-        swarm.parallel(run_sequence, args_dict=cf_args)
+        swarm.parallel_unblock(run_sequence, args_dict=cf_args)
         #global_dispatch()
+        while True:
+            try:
+                if is_all_end(status_list):
+                    break
+            except KeyboardInterrupt:
+                print('ctrl+c incoming')
+                CFFlyTask.emergency_shutdown = True
+                break

@@ -85,6 +85,6 @@ class CFDispatch:
         def outer_callback(timestamp, data, logconf):
             return CFDispatch.update_cfstatus(timestamp, data, logconf, cf_arg, uri)
         log_conf.data_received_cb.add_callback(outer_callback)
-        print('about to start log')
+        #print('about to start log')
         log_conf.start()
 
