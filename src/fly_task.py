@@ -12,7 +12,7 @@ from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
 # 飞行任务类
 class CFFlyTask:
-    _formation_number = 1  # 本次飞行任务无人机个数
+    _formation_number = 2  # 本次飞行任务无人机个数
     _sync_number = 0  # 用于判断是否所有无人机都正常完成当前任务
     _switch_pair_list = None  # 存储当前需要交换的无人机每个pair
     _sync_number_lock = threading.Lock()  # 多机同步时需要的锁
@@ -50,7 +50,7 @@ class CFFlyTask:
         x2 = point2[0]
         y2 = point2[1]
         z2 = point2[2]
-        return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) > 0.15
+        return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) > 0.10
 
     def __getattr__(self, item):
         if item == 'trajectory_list':
@@ -122,19 +122,20 @@ class CFFlyTask:
                 return
 
     def run_single_trajectory(self, trajectory):  # 运行单个trajectory
-        print('flying trajectory ',self._trajectory_index)
+        #print('flying trajectory ',self._trajectory_index)
         if trajectory.posture == FlyPosture.hovering:
             return
+        print(self._cf.link_uri)
         commander = DuplicablePositionHlCommander(self._cf)
         commander.set_cf_status(self._status)
         if self._need_take_off:
-            print('right before take off')
+            #print('right before take off')
             commander.take_off()
-            print('already take off')
+            #print('already take off')
             self._need_take_off = False
         current_point = 0
         initial_point = True
-        print('enter run_single_trajectory while true')
+        #print('enter run_single_trajectory while true')
         while True:
             point = trajectory.get_next_point()
             print('current point is', point)
@@ -142,7 +143,7 @@ class CFFlyTask:
                 if initial_point:
                     while CFFlyTask.not_close_enough(self._status.current_position, point):
                         commander.go_to(point[0], point[1], point[2],1)
-                        print('getting close to start_position')
+                        #print('getting close to start_position')
                     initial_point = False
                 current_point = point  # 不是最后一个点的话赋值
                 self._status.current_end_point = trajectory.get_current_end_point()  # 更新当前终点
@@ -170,7 +171,7 @@ class CFFlyTask:
                         return
                     else:
                         commander.go_to(current_point[0],current_point[1],current_point[2])
-                        print('getting close to end_position')
+                       # print('getting close to end_position')
 
                 return
 
@@ -310,15 +311,12 @@ class CFTrajectoryFactory:
     @staticmethod
     def add(first, second):  # 将两个路径连接成一段路径
         point_list = []
-        if operator.eq(first.point_list[-1], second.point_list[0]):
-            for point_index in range(len(first.point_list)):
-                point_list.append(first.point_list[point_index])
-            for point_index in range(len(second.point_list)):
-                if point_index == 0:
-                    continue
-                point_list.append(second.point_list[point_index])
-            trajectory = CFTrajectory(FlyPosture.flying, point_list)
-            return trajectory
-        else:
-            print('两段不连续无法相加')
-            return None
+        for point_index in range(len(first.point_list)):
+            point_list.append(first.point_list[point_index])
+        for point_index in range(len(second.point_list)):
+            if point_index == 0:
+                continue
+            point_list.append(second.point_list[point_index])
+        trajectory = CFTrajectory(FlyPosture.flying, point_list)
+        return trajectory
+        

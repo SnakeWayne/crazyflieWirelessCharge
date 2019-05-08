@@ -70,7 +70,7 @@ class CFDispatch:
         status.current_position[1] = data['kalman.stateY'] 
         status.current_position[2] = data['kalman.stateZ']
         status.current_battery = data['pm.vbat'] * 10
-        print(uri,'x:', status.current_position[0],'y:', status.current_position[1],'z:', status.current_position[2])
+       # print(uri,'x:', status.current_position[0],'y:', status.current_position[1],'z:', status.current_position[2])
 
     @staticmethod
     def add_callback_to_singlecf(uri, scf, cf_arg):
