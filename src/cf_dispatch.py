@@ -75,7 +75,7 @@ class CFDispatch:
     @staticmethod
     def add_callback_to_singlecf(uri, scf, cf_arg):
         cflib.crtp.init_drivers(enable_debug_driver=False)
-        log_conf = LogConfig(name=uri, period_in_ms=500)
+        log_conf = LogConfig(name=uri, period_in_ms=300)
         log_conf.add_variable('kalman.stateX', 'float')
         log_conf.add_variable('kalman.stateY', 'float')
         log_conf.add_variable('kalman.stateZ', 'float')

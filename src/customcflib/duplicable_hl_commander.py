@@ -18,7 +18,7 @@ class DuplicablePositionHlCommander(PositionHlCommander):
 
     def __init__(self, crazyflie,
                  x=0.0, y=0.0, z=0.0,
-                 default_velocity=10,
+                 default_velocity=1.5,
                  default_height=0.5,
                  controller=CONTROLLER_PID):
         """
@@ -180,7 +180,8 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         :param velocity: the velocity (meters/second)
         :return:
         """
-
+        #if not self.__status.current_posture == FlyPosture.avoiding:
+        #key_inter = input('control flying keyboard')
         z = self._height(z)
 
         dx = x - self.__status.current_position[0]

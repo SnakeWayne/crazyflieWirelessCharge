@@ -207,10 +207,10 @@ class CFCollisionAvoidance:
 
     """
     GRAVITATION_CONSTANT = 0.5  # 引力常量
-    REPULSION_CONSTANT = 1  # 斥力常量
-    MIN_SAFETY_XY_DST = 0.6  # xy轴最小安全距离
-    MIN_SAFETY_Z_DST = 0.6  # z轴最小安全距离
-    MIN_SAFETY_DST = 0.7
+    REPULSION_CONSTANT = 10  # 斥力常量
+    MIN_SAFETY_XY_DST =1  # xy轴最小安全距离
+    MIN_SAFETY_Z_DST =1 # z轴最小安全距离
+    MIN_SAFETY_DST = 1
 
     def __init__(self, cf, status):
         """
@@ -252,6 +252,7 @@ class CFCollisionAvoidance:
         current_positon = self._status.current_position
         distance = math.sqrt((current_positon[0] - dst[0]) ** 2 + (current_positon[1] - dst[1]) ** 2 + (
                 current_positon[2] - dst[2]) ** 2)
+        distance = 0.2
         #print('cf',self._cf.link_uri,'calculate distance is',distance)
         if distance > CFCollisionAvoidance.MIN_SAFETY_DST:
             return repulsion, direction
@@ -267,7 +268,7 @@ class CFCollisionAvoidance:
             direction[1] = (current_positon[1] - dst[1]) / distance
             direction[2] = 2*(current_positon[2] - dst[2]) / distance
             #print('cf',self._cf.link_uri,'calculate direction is',direction)
-            return repulsion, -direction
+            return repulsion, direction
 
     def cal_sum_of_repulsion(self, status_list):
         sum_of_repulsion = numpy.array([0.0, 0.0, 0.0])
@@ -318,26 +319,25 @@ class CFCollisionAvoidance:
         :return:
         """
         step = 0.05
+        current_position = self._status.current_position
+        commander = DuplicablePositionHlCommander(self._cf, current_position[0], current_position[1],current_position[2],10)
+        commander.set_cf_status(self._status)
         while True:
-
             if self.if_need_avoidance(status_list):
+                if self._status.current_posture = FlyPosture.flying:
+                    with self._status_lock:
+                        self._status.current_posture = FlyPosture.avoiding
                 direction_of_repulsion = self.cal_sum_of_repulsion(status_list)[1]
                 #print('cf',self._status.uri,'is going to avoid in the direction of',direction_of_repulsion)
-                with self._status_lock:
-                    self._status.current_posture = FlyPosture.avoiding
-                # 执行避障动作
-                current_position = self._status.current_position
-                commander = DuplicablePositionHlCommander(self._cf, current_position[0], current_position[1],
-                                                          current_position[2],
-                                                          0.3)
+                               # 执行避障动作
                 nextx = current_position[0] + direction_of_repulsion[0] * step
                 nexty = current_position[1] + direction_of_repulsion[1] * step
                 nextz = current_position[2] + direction_of_repulsion[2] * step
-                commander.go_to(nextx, nexty, nextz)
+                commander.go_to(nextx, nexty, nextz,10)
                 print('cf',self._status.uri,'is going to the calculated avoiding position',nextx,nexty,nextz)
-                time.sleep(0.1)
+                time.sleep(1)
                 # 执行避障动作之后继续判断是否需要避障
-            elif (not self.if_need_avoidance(status_list)) and self._status.current_posture == FlyPosture.avoiding:
+            elif self._status.current_posture == FlyPosture.avoiding:
                 with self._status_lock:
                     self._status.current_posture = FlyPosture.flying
                 time.sleep(0.1)
