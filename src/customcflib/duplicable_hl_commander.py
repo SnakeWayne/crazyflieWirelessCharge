@@ -18,7 +18,7 @@ class DuplicablePositionHlCommander(PositionHlCommander):
 
     def __init__(self, crazyflie,
                  x=0.0, y=0.0, z=0.0,
-                 default_velocity=20,
+                 default_velocity=10,
                  default_height=0.5,
                  controller=CONTROLLER_PID):
         """
@@ -87,23 +87,23 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         if not self._cf.is_connected():
             raise Exception('Crazyflie is not connected')
         
-        print('inside take_off func')
+        #print('inside take_off func')
 
         self._is_flying = True
         self._reset_position_estimator()
-        print('complete position estimator')
+       # print('complete position estimator')
         self._activate_controller()
-        print('complete active controller')
+        #print('complete active controller')
         self._activate_high_level_commander()
-        print('complete active hl_commander')
+        #print('complete active hl_commander')
         self._hl_commander = self._cf.high_level_commander
         height = self._height(height)
-        print('current height is', height)
+        #print('current height is', height)
 
         duration_s = height / self._velocity(velocity)
-        print('duration = ',duration_s)
+        #print('duration = ',duration_s)
         self._hl_commander.takeoff(height, duration_s)
-        print('complete take of with takeoff')
+        #print('complete take of with takeoff')
         time.sleep(0.1)
         self._z = height
 
@@ -204,14 +204,14 @@ class DuplicablePositionHlCommander(PositionHlCommander):
         return self.__status.current_position[0], self.__status.current_position[1], self.__status.current_position[2]
 
     def _reset_position_estimator(self):
-        print('inside position estimator')
+        #print('inside position estimator')
         self._cf.param.set_value('kalman.initialX', '{:.2f}'.format(self.__status.current_position[0]))
         self._cf.param.set_value('kalman.initialY', '{:.2f}'.format(self.__status.current_position[1]))
         self._cf.param.set_value('kalman.initialZ', '{:.2f}'.format(self.__status.current_position[2]))
-        print('complete set_value initialZ')
+        #print('complete set_value initialZ')
         self._cf.param.set_value('kalman.resetEstimation', '1')
         time.sleep(0.1)
-        print('complete kalman.resetEstimation 1')
+       # print('complete kalman.resetEstimation 1')
         self._cf.param.set_value('kalman.resetEstimation', '0')
-        print('complete kalman.resetEstimation 0')
+        #print('complete kalman.resetEstimation 0')
         time.sleep(0.2)

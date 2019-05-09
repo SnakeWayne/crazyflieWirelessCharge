@@ -55,7 +55,7 @@ if __name__ == '__main__':
     status1 = CFStatus(URI, FlyPosture.flying, cf_status_lock1)
     status_list = [status1]
     CFFlyTask.set_switch_pair_list(switch_pair_list)
-    task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.arch([1,1,1],[-1,-1,1],[0,0,1]),CFTrajectoryFactory.arch([-1,-1,1],[1,1,1],[0,0,1])])
+    task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.arch([1,1,1],[-1,-1,1],[-1,1,0]),CFTrajectoryFactory.arch([-1,-1,1],[1,1,1],[-1,1,0])])
     DuplicablePositionHlCommander.set_class_status_list(status_list)
     with SyncCrazyflie(URI, cf=Crazyflie(rw_cache='./cache')) as scf:
         task1.set_cf_afterword(scf.cf)

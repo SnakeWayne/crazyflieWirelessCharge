@@ -23,11 +23,37 @@ from fly_task import *
 end_all = False
 
 URI1 = 'radio://0/20/2M/E7E7E7E7E7'
-URI2 = 'radio://0/00/2M/E7E7E7E7E7'
+URI2 = 'radio://0/10/2M/E7E7E7E7E7'
 
 
 
-uris = [URI1]
+uris = [URI1,URI2]
+switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]]}
+CFFlyTask.set_switch_pair_list(switch_pair_list)
+
+
+cf_status_lock1 = threading.Lock()
+cf_status_lock2 = threading.Lock()
+
+status1 = CFStatus(URI1, FlyPosture.flying, cf_status_lock1)
+status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)
+status_list = [status1,status2]
+DuplicablePositionHlCommander.set_class_status_list(status_list)
+
+
+
+
+task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.add(CFTrajectoryFactory.arch([1,1,1],[-1,-1,1],[0,0,1]), CFTrajectoryFactory.arch([-1,-1,1],[1,1,1],[0,0,1]))])
+task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.add(CFTrajectoryFactory.arch([-1,-1,1],[1,1,1],[0,0,1]), CFTrajectoryFactory.arch([1,1,1],[-1,-1,1],[0,0,1]))])
+task_list = [task1,task2]
+
+
+
+cf_args = {
+    URI1:[[task1,status1,cf_status_lock1]],
+    URI2:[[task2,status2,cf_status_lock2]],
+    }
+
 
 def is_all_end(local_status_list):
     for status in local_status_list:
@@ -58,25 +84,6 @@ def add_callback_to_singlecf(uri, scf, status):
     print('about to start log')
     log_conf.start()
 
-switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]]}
-
-cf_status_lock1 = threading.Lock()
-
-status1 = CFStatus(URI1, FlyPosture.flying, cf_status_lock1)
-
-
-
-status_list = [status1]
-CFFlyTask.set_switch_pair_list(switch_pair_list)
-task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.arch([1,1,1],[-1,-1,1],[0,0,1]), CFTrajectoryFactory.arch([-1,-1,1],[1,1,1],[0,0,1])])
-
-task_list = [task1]
-DuplicablePositionHlCommander.set_class_status_list(status_list)
-
-cf_args = {
-    URI1:[[task1,status1,cf_status_lock1]],
-    }
-
 
 def is_all_end(local_status_list):
     for status in local_status_list:
@@ -100,7 +107,7 @@ def run_sequence(scf, cf_arg):
     
 
 if __name__ == '__main__':
-     
+ 
     # Initialize the low-level drivers (don't list the debug drivers)
     cflib.crtp.init_drivers(enable_debug_driver=False)
     factory = CachedCfFactory(rw_cache='./cache')
@@ -119,7 +126,7 @@ if __name__ == '__main__':
         #swarm.parallel(wait_for_param_download)
 
         
-        swarm.parallel_unblock(run_sequence, args_dict=cf_args)
+        swarm.parallel(run_sequence, args_dict=cf_args)
 
       # We take off when the commander is create
                  
