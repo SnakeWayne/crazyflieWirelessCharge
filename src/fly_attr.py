@@ -12,9 +12,11 @@ class FlyPosture(Enum):
 
     charging = 4  # 正在充电
 
-    avoiding = 5  # 正在避障
+    avoiding_flying = 5  # 正在飞行避障
 
-    over = 6  # 完成全部飞行任务
+    avoiding_hovering = 6  # 正在悬停避障
+
+    over = 7  # 完成全部飞行任务
 
 
 class CFSequence:

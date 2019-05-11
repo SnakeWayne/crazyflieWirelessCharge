@@ -207,10 +207,10 @@ class CFCollisionAvoidance:
 
     """
     GRAVITATION_CONSTANT = 0.5  # 引力常量
-    REPULSION_CONSTANT = 1  # 斥力常量
-    MIN_SAFETY_XY_DST = 0.6  # xy轴最小安全距离
-    MIN_SAFETY_Z_DST = 0.6  # z轴最小安全距离
-    MIN_SAFETY_DST = 0.7
+    REPULSION_CONSTANT = 10  # 斥力常量
+    MIN_SAFETY_XY_DST =1  # xy轴最小安全距离
+    MIN_SAFETY_Z_DST =1 # z轴最小安全距离
+    MIN_SAFETY_DST = 1
 
     def __init__(self, cf, status):
         """
@@ -221,24 +221,29 @@ class CFCollisionAvoidance:
         self._status = status
         self._status_lock = self._status.status_lock
 
-    def calculate_gravitation(self, dst):
+    def calculate_gravitation(self):
         """
         返回dst对src的引力大小和方向
         :param dst:终点坐标，三元组
         :returns:引力大小：float类型
             引力方向，用方向向量表示
         """
+        if self._status.current_posture == FlyPosture.avoiding_hovering:
+            return 0, 0
+        dst = self._status.current_end_point
         m = 2
         direction = numpy.array([0.0, 0.0, 0.0])
         current_positon = self._status.current_position
         distance = math.sqrt((current_positon[0] - dst[0]) ** 2 + (current_positon[1] - dst[1]) ** 2 + (
                 current_positon[2] - dst[2]) ** 2)
+        if distance < 0.15:
+            return 0, 0
         # 引力公式暂定为 Gravition = G * dis**m 引力常数乘以距离的m次方
-        gravition = CFCollisionAvoidance.GRAVITATION_CONSTANT * (distance ** m)
+        gravitation = CFCollisionAvoidance.GRAVITATION_CONSTANT * (distance ** m)
         direction[0] = (dst[0] - current_positon[0]) / distance
         direction[1] = (dst[1] - current_positon[1]) / distance
         direction[2] = (dst[2] - current_positon[2]) / distance
-        return gravition, direction
+        return gravitation, direction
 
     def calculate_repulsion(self, dst):
         """
@@ -265,9 +270,9 @@ class CFCollisionAvoidance:
 
             direction[0] = (current_positon[0] - dst[0]) / distance
             direction[1] = (current_positon[1] - dst[1]) / distance
-            direction[2] = 2*(current_positon[2] - dst[2]) / distance
+            direction[2] = (current_positon[2] - dst[2]) / distance
             #print('cf',self._cf.link_uri,'calculate direction is',direction)
-            return repulsion, -direction
+            return repulsion, direction
 
     def cal_sum_of_repulsion(self, status_list):
         sum_of_repulsion = numpy.array([0.0, 0.0, 0.0])
@@ -276,10 +281,10 @@ class CFCollisionAvoidance:
         #print('cf',self._status.uri,'current position is',self._status.current_position)
         time.sleep(0.1)
         for index in range(len(status_list)):
-            if self._status.uri != status_list[index].uri:
+            if self.if_need_avoidance(status_list[index]):
                 repulsion, direction = self.calculate_repulsion(status_list[index].current_position)
                 sum_of_repulsion = sum_of_repulsion + repulsion * direction  # 计算斥力在三个方向上的和
-        mod_of_repulsion = math.sqrt((sum_of_repulsion ** 2).sum())  # 计算斥力的模 三个方向的平方和再开方
+        mod_of_repulsion = numpy.linalg.norm(sum_of_repulsion)  # 计算斥力的模 三个方向的平方和再开方
         if mod_of_repulsion != 0:
             direction_of_repulsion = sum_of_repulsion / mod_of_repulsion
         print('cf',self._cf.link_uri,'avoiding direction is',direction_of_repulsion)
@@ -291,7 +296,6 @@ class CFCollisionAvoidance:
         :param status_list: 全局飞行状态
         :return:
         """
-        unsafe_num = 0
         for index in range(len(status_list)):
             if self._status.uri != status_list[index].uri and self.if_is_in_air() and status_list[index].current_posture != FlyPosture.charging and status_list[index].current_posture != FlyPosture.over:
                 xy_distance = math.sqrt(
@@ -299,11 +303,24 @@ class CFCollisionAvoidance:
                     (self._status.current_position[1] - status_list[index].current_position[1]) ** 2)
                 z_distance = abs(self._status.current_position[2] - status_list[index].current_position[2])
                 if xy_distance < CFCollisionAvoidance.MIN_SAFETY_XY_DST and z_distance < CFCollisionAvoidance.MIN_SAFETY_Z_DST:
-                    unsafe_num += 1
-        if unsafe_num > 0:
-            return True
-        else:
-            return False
+                    return True
+        return False
+
+    def if_need_avoidance(self, status):
+        """
+        判断单个无人机是否需要避障
+        :param status: 单个无人机
+        :return:
+        """
+        if self._status.uri != status.uri and status.current_posture != FlyPosture.charging \
+                and status.current_posture != FlyPosture.over:
+            xy_distance = math.sqrt(
+                (self._status.current_position[0] - status.current_position[0]) ** 2 +
+                (self._status.current_position[1] - status.current_position[1]) ** 2)
+            z_distance = abs(self._status.current_position[2] - status.current_position[2])
+            if xy_distance < CFCollisionAvoidance.MIN_SAFETY_XY_DST and z_distance < CFCollisionAvoidance.MIN_SAFETY_Z_DST:
+                return True
+        return False
 
     def if_is_in_air(self):
         if self._status.current_position[2]>0.5:
@@ -318,28 +335,37 @@ class CFCollisionAvoidance:
         :return:
         """
         step = 0.05
+        current_position = self._status.current_position
+        commander = DuplicablePositionHlCommander(self._cf, current_position[0], current_position[1],current_position[2],10)
+        commander.set_cf_status(self._status)
         while True:
-
             if self.if_need_avoidance(status_list):
-                direction_of_repulsion = self.cal_sum_of_repulsion(status_list)[1]
+                if self._status.current_posture == FlyPosture.flying:
+                    with self._status_lock:
+                        if self._status.current_posture == FlyPosture.flying:
+                            self._status.current_posture = FlyPosture.avoiding_flying
+                        else:
+                            self._status.current_posture = FlyPosture.avoiding_hovering
+                mod_of_repulsion, direction_of_repulsion = self.cal_sum_of_repulsion(status_list)
+                mod_of_gravitation, direction_of_gravitation = self.calculate_gravitation()
+                sum = mod_of_repulsion*direction_of_repulsion+mod_of_gravitation*direction_of_gravitation
                 #print('cf',self._status.uri,'is going to avoid in the direction of',direction_of_repulsion)
-                with self._status_lock:
-                    self._status.current_posture = FlyPosture.avoiding
-                # 执行避障动作
-                current_position = self._status.current_position
-                commander = DuplicablePositionHlCommander(self._cf, current_position[0], current_position[1],
-                                                          current_position[2],
-                                                          0.3)
-                nextx = current_position[0] + direction_of_repulsion[0] * step
-                nexty = current_position[1] + direction_of_repulsion[1] * step
-                nextz = current_position[2] + direction_of_repulsion[2] * step
-                commander.go_to(nextx, nexty, nextz)
+                               # 执行避障动作
+                sum_direction = sum/numpy.linalg.norm(sum)
+                nextx = current_position[0] + sum_direction[0] * step
+                nexty = current_position[1] + sum_direction[1] * step
+                nextz = current_position[2] + sum_direction[2] * step*2
+                commander.go_to(nextx, nexty, nextz,10)
                 print('cf',self._status.uri,'is going to the calculated avoiding position',nextx,nexty,nextz)
-                time.sleep(0.1)
+                time.sleep(0.7)
                 # 执行避障动作之后继续判断是否需要避障
-            elif (not self.if_need_avoidance(status_list)) and self._status.current_posture == FlyPosture.avoiding:
+            elif self._status.current_posture == FlyPosture.avoiding_flying:
                 with self._status_lock:
                     self._status.current_posture = FlyPosture.flying
+                time.sleep(0.1)
+            elif self._status.current_posture == FlyPosture.avoiding_hovering:
+                with self._status_lock:
+                    self._status.current_posture = FlyPosture.hovering
                 time.sleep(0.1)
             elif self._status.current_posture == FlyPosture.charging:
                 break

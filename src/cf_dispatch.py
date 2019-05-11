@@ -6,13 +6,29 @@ from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.crazyflie.syncLogger import SyncLogger
-
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
+from mpl_toolkits.mplot3d import Axes3D
 from fly_attr import FlyPosture
-
+import math
 
 class CFDispatch:
 
     _n = 0  # 用于判断当前调度情况
+    ax = plt.axes(projection='3d')
+
+    @staticmethod
+    def plot_prep():
+        plt.close()  # clf() # 清图  cla() # 清坐标轴 close() # 关窗口
+        CFDispatch.ax.set_xlabel('X')
+        CFDispatch.ax.set_ylabel('Y')
+        CFDispatch.ax.set_zlabel('Z')
+        CFDispatch.ax.set_xlim(-3,3)
+        CFDispatch.ax.set_ylim(-3,3)
+        CFDispatch.ax.set_zlim(-1,4)
+        CFDispatch.color_dic = {'radio://0/20/2M/E7E7E7E7E7': '#00CED1', 'radio://0/00/2M/E7E7E7E7E7': '#DC143C'}
+        CFDispatch.area = math.pi * 4 ** 2
+        plt.grid(True)  # 添加网格
 
     @staticmethod
     def calculate_how_to_dispatch(status_list):
@@ -66,6 +82,7 @@ class CFDispatch:
     @staticmethod
     def update_cfstatus(timestamp, data, logconf, cf_arg, uri):
         status = cf_arg[1]
+        CFDispatch.ax.scatter(data['kalman.stateX'], data['kalman.stateY'], data['kalman.stateZ'], c=CFDispatch.color_dic[uri], alpha=0.4, label=uri)  # 散点图
         status.current_position[0] = data['kalman.stateX'] 
         status.current_position[1] = data['kalman.stateY'] 
         status.current_position[2] = data['kalman.stateZ']
@@ -75,13 +92,14 @@ class CFDispatch:
     @staticmethod
     def add_callback_to_singlecf(uri, scf, cf_arg):
         cflib.crtp.init_drivers(enable_debug_driver=False)
-        log_conf = LogConfig(name=uri, period_in_ms=500)
+        log_conf = LogConfig(name=uri, period_in_ms=300)
         log_conf.add_variable('kalman.stateX', 'float')
         log_conf.add_variable('kalman.stateY', 'float')
         log_conf.add_variable('kalman.stateZ', 'float')
         log_conf.add_variable('pm.vbat', 'float')
         scf.cf.log.add_config(log_conf)
-
+        CFDispatch.ax.scatter(-100, -100, -100, c=CFDispatch.color_dic[uri], alpha=0.4, label=uri)  # 散点图
+        CFDispatch.ax.legend()
         def outer_callback(timestamp, data, logconf):
             return CFDispatch.update_cfstatus(timestamp, data, logconf, cf_arg, uri)
         log_conf.data_received_cb.add_callback(outer_callback)

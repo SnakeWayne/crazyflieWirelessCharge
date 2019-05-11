@@ -23,26 +23,26 @@ from fly_attr import CFSequence
 from fly_attr import CFStatus
 from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
-URI1 = 'radio://0/10/2M/E7E7E7E7E7'
-#URI2 = 'radio://0/10/2M/E7E7E7E7E7'
+URI1 = 'radio://0/20/2M/E7E7E7E7E7'
+URI2 = 'radio://0/00/2M/E7E7E7E7E7'
 
 
 
 uris = [
         URI1,
-        #URI2
+        URI2
         ]
 switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]]}
 CFFlyTask.set_switch_pair_list(switch_pair_list)
 
 
 cf_status_lock1 = threading.Lock()
-#cf_status_lock2 = threading.Lock()
+cf_status_lock2 = threading.Lock()
 
 status1 = CFStatus(URI1, FlyPosture.flying, cf_status_lock1)
-#status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)
+status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)
 status_list = [status1,
-        #status2
+        status2
         ]
 DuplicablePositionHlCommander.set_class_status_list(status_list)
 
@@ -50,16 +50,16 @@ DuplicablePositionHlCommander.set_class_status_list(status_list)
 
 
 task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.line([0.5,1,1],[0.5,-1,1])])
-#task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([0.5,-1,1],[0.5,1,1])])
+task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([0.5,-1,1],[0.5,1,1])])
 task_list = [task1,
-        #task2
+        task2
         ]
 
 
 
 cf_args = {
     URI1:[[task1,status1,cf_status_lock1]],
-    #URI2:[[task2,status2,cf_status_lock2]],
+    URI2:[[task2,status2,cf_status_lock2]],
     }
 
 
@@ -148,7 +148,8 @@ def reset_estimator(scf):
 
 def is_all_end(local_status_list):
     for status in local_status_list:
-        if status.current_posture == FlyPosture.flying:
+        if status.current_posture == FlyPosture.flying or status.current_posture == FlyPosture.avoiding_hovering \
+                or status.current_posture == FlyPosture.hovering or status.current_posture == FlyPosture.avoiding_flying:
             return False
     return True
 
@@ -247,7 +248,7 @@ if __name__ == '__main__':
         # flying.
         print('Waiting for parameters to be downloaded...')
         swarm.parallel(wait_for_param_download)
-
+        CFDispatch.plot_prep()
         scfs = swarm.get_all_scfs()
 
         swarm.parallel_unblock(run_sequence, args_dict=cf_args)
