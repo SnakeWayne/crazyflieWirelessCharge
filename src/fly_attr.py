@@ -68,7 +68,10 @@ class CFStatus:
         self._current_battery = current_battery
         self._status_lock = status_lock
         self._current_posture = current_posture
-        self._current_end_point = current_end_point
+        if current_end_point == None:
+            self._current_end_point = [0, 0, 0]
+        else:
+            self._current_end_point = current_end_point
 
     def __getattr__(self, item):
         if item == 'uri':

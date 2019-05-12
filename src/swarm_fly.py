@@ -25,12 +25,14 @@ from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
 URI1 = 'radio://0/20/2M/E7E7E7E7E7'
 URI2 = 'radio://0/00/2M/E7E7E7E7E7'
+#URI3 = 'radio://0/10/2M/E7E7E7E7E7'
 
 
 
 uris = [
         URI1,
-        URI2
+        URI2,
+        #URI3
         ]
 switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]]}
 CFFlyTask.set_switch_pair_list(switch_pair_list)
@@ -38,21 +40,29 @@ CFFlyTask.set_switch_pair_list(switch_pair_list)
 
 cf_status_lock1 = threading.Lock()
 cf_status_lock2 = threading.Lock()
+#cf_status_lock3 = threading.Lock()
+
 
 status1 = CFStatus(URI1, FlyPosture.flying, cf_status_lock1)
 status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)
+#status3 = CFStatus(URI3, FlyPosture.flying, cf_status_lock3)
+
 status_list = [status1,
-        status2
+        status2,
+        #status3
         ]
 DuplicablePositionHlCommander.set_class_status_list(status_list)
 
 
 
 
-task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.line([0.5,1,1],[0.5,-1,1])])
-task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([0.5,-1,1],[0.5,1,1])])
+task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.line([0,0.8,1],[0,-0.8,1])])
+task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([0,-0.8,1],[0,0.8,1])])
+#task3 = CFFlyTask(Crazyflie(), status3, [CFTrajectoryFactory.line([0.5,0,1],[-0.5,0,1])])
+
 task_list = [task1,
-        task2
+        task2,
+        #task3
         ]
 
 
@@ -60,6 +70,8 @@ task_list = [task1,
 cf_args = {
     URI1:[[task1,status1,cf_status_lock1]],
     URI2:[[task2,status2,cf_status_lock2]],
+    #URI3:[[task3,status3,cf_status_lock3]],
+
     }
 
 
@@ -250,8 +262,9 @@ if __name__ == '__main__':
         swarm.parallel(wait_for_param_download)
         CFDispatch.plot_prep()
         scfs = swarm.get_all_scfs()
-
         swarm.parallel_unblock(run_sequence, args_dict=cf_args)
+        CFDispatch.show()
+
         #global_dispatch()
         while True:
             try:

@@ -19,16 +19,20 @@ class CFDispatch:
 
     @staticmethod
     def plot_prep():
-        plt.close()  # clf() # 清图  cla() # 清坐标轴 close() # 关窗口
+        #plt.close()  # clf() # 清图  cla() # 清坐标轴 close() # 关窗口
         CFDispatch.ax.set_xlabel('X')
         CFDispatch.ax.set_ylabel('Y')
         CFDispatch.ax.set_zlabel('Z')
         CFDispatch.ax.set_xlim(-3,3)
         CFDispatch.ax.set_ylim(-3,3)
         CFDispatch.ax.set_zlim(-1,4)
-        CFDispatch.color_dic = {'radio://0/20/2M/E7E7E7E7E7': '#00CED1', 'radio://0/00/2M/E7E7E7E7E7': '#DC143C'}
+        CFDispatch.color_dic = {'radio://0/20/2M/E7E7E7E7E7': '#00CED1', 'radio://0/00/2M/E7E7E7E7E7': '#DC143C','radio://0/10/2M/E7E7E7E7E7':'#DC143C'}
         CFDispatch.area = math.pi * 4 ** 2
-        plt.grid(True)  # 添加网格
+        plt.grid(True)  # 添加网格
+
+    @staticmethod
+    def show():
+        plt.show()
 
     @staticmethod
     def calculate_how_to_dispatch(status_list):

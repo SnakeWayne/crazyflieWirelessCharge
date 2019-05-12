@@ -154,9 +154,13 @@ class CFFlyTask:
                         #print('getting close to start_position')
                     initial_point = False
                 current_point = point  # 不是最后一个点的话赋值
-                self._status.current_end_point = trajectory.get_current_end_point()  # 更新当前终点
+                end_point = trajectory.get_current_end_point()  # 更新当前终点
+                if end_point != None:
+                    self._status.current_end_point[0] = end_point[0]
+                    self._status.current_end_point[1] = end_point[1]
+                    self._status.current_end_point[2] = end_point[2]
                 if self._status.current_posture == FlyPosture.avoiding_flying:
-                    time.sleep(1)  # 避障的时候更新点的速度减慢
+                    time.sleep(0.7)  # 避障的时候更新点的速度减慢
                     continue
                 elif CFFlyTask._switch_pair_list['formation'][0] == self._cf.link_uri:  # 是否为交换无人机
                     self.formation_fly_to_charge(
@@ -171,7 +175,7 @@ class CFFlyTask:
             else:
                 while CFFlyTask.not_close_enough(self._status.current_position, current_point):  # 有可能避障完成之后已经便利到终点，但是偏离实际位置，所以还是要修正的，修正过程中也会有避障可能
                     if self._status.current_posture == FlyPosture.avoiding_flying:
-                        time.sleep(0.5)
+                        time.sleep(0.2)
                         continue
                     elif CFFlyTask._switch_pair_list['formation'][0] == self._cf.link_uri:
                         self.formation_fly_to_charge(
@@ -227,7 +231,7 @@ class CFTrajectory:
             return next_point
 
     def get_current_end_point(self):
-        for end_point_index in range(len(self._end_point_index_list)):
+        for end_point_index in self._end_point_index_list:
             if end_point_index >= self._current_point_index:
                 return self._point_list[end_point_index]
 
@@ -247,7 +251,7 @@ class CFTrajectory:
         current_max_distance = -1
         for point_index in range(len(self._point_list)):
             if point_index+1 == len(self._point_list):
-                end_point_index_list.append(self._point_list[point_index])
+                end_point_index_list.append(point_index)
             elif CFTrajectory._calculate_distance_power(self._point_list[current_start_point_index],
                                                         self._point_list[point_index]) > current_max_distance:
                 current_max_distance = CFTrajectory.\
@@ -280,7 +284,7 @@ class CFTrajectoryFactory:
         vector_length = numpy.linalg.norm(vector)
         for i in range(len(vector)):
             vector[i] = vector[i] / vector_length
-        point_list = [start]
+        point_list = []
         ratio = 0
         while True:
             x_step = vector[0] * 0.05 * ratio

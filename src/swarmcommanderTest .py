@@ -23,7 +23,7 @@ from fly_task import *
 end_all = False
 
 URI1 = 'radio://0/20/2M/E7E7E7E7E7'
-URI2 = 'radio://0/10/2M/E7E7E7E7E7'
+URI2 = 'radio://0/00/2M/E7E7E7E7E7'
 
 
 
