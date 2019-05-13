@@ -26,7 +26,7 @@ class CFDispatch:
         CFDispatch.ax.set_xlim(-3,3)
         CFDispatch.ax.set_ylim(-3,3)
         CFDispatch.ax.set_zlim(-1,4)
-        CFDispatch.color_dic = {'radio://0/20/2M/E7E7E7E7E7': '#00CED1', 'radio://0/00/2M/E7E7E7E7E7': '#DC143C','radio://0/10/2M/E7E7E7E7E7':'#DC143C'}
+        CFDispatch.color_dic = {'radio://0/20/2M/E7E7E7E7E7': '#00CED1', 'radio://0/00/2M/E7E7E7E7E7': '#DC143C','radio://0/10/2M/E7E7E7E7E7':'#FFF8DC'}
         CFDispatch.area = math.pi * 4 ** 2
         plt.grid(True)  # 添加网格
 
@@ -86,7 +86,7 @@ class CFDispatch:
     @staticmethod
     def update_cfstatus(timestamp, data, logconf, cf_arg, uri):
         status = cf_arg[1]
-        CFDispatch.ax.scatter(data['kalman.stateX'], data['kalman.stateY'], data['kalman.stateZ'], c=CFDispatch.color_dic[uri], alpha=0.4, label=uri)  # 散点图
+        #CFDispatch.ax.scatter(data['kalman.stateX'], data['kalman.stateY'], data['kalman.stateZ'], c=CFDispatch.color_dic[uri], alpha=0.4, label=uri)  # 散点图
         status.current_position[0] = data['kalman.stateX'] 
         status.current_position[1] = data['kalman.stateY'] 
         status.current_position[2] = data['kalman.stateZ']
@@ -102,8 +102,8 @@ class CFDispatch:
         log_conf.add_variable('kalman.stateZ', 'float')
         log_conf.add_variable('pm.vbat', 'float')
         scf.cf.log.add_config(log_conf)
-        CFDispatch.ax.scatter(-100, -100, -100, c=CFDispatch.color_dic[uri], alpha=0.4, label=uri)  # 散点图
-        CFDispatch.ax.legend()
+        #CFDispatch.ax.scatter(-100, -100, -100, c=CFDispatch.color_dic[uri], alpha=0.4, label=uri)  # 散点图
+        #CFDispatch.ax.legend()
         def outer_callback(timestamp, data, logconf):
             return CFDispatch.update_cfstatus(timestamp, data, logconf, cf_arg, uri)
         log_conf.data_received_cb.add_callback(outer_callback)
