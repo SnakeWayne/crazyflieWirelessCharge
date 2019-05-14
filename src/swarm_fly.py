@@ -23,16 +23,16 @@ from fly_attr import CFSequence
 from fly_attr import CFStatus
 from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
-URI1 = 'radio://0/20/2M/E7E7E7E7E7'
-URI2 = 'radio://0/00/2M/E7E7E7E7E7'
-#URI3 = 'radio://0/10/2M/E7E7E7E7E7'
+URI1 = 'radio://0/80/2M/E7E7E7E7E7'
+URI2 = 'radio://0/90/2M/E7E7E7E7E7'
+URI3 = 'radio://0/100/2M/E7E7E7E7E7'
 
 
 
 uris = [
         URI1,
         URI2,
-        #URI3
+        URI3
         ]
 switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]]}
 CFFlyTask.set_switch_pair_list(switch_pair_list)
@@ -40,29 +40,29 @@ CFFlyTask.set_switch_pair_list(switch_pair_list)
 
 cf_status_lock1 = threading.Lock()
 cf_status_lock2 = threading.Lock()
-#cf_status_lock3 = threading.Lock()
+cf_status_lock3 = threading.Lock()
 
 
 status1 = CFStatus(URI1, FlyPosture.flying, cf_status_lock1)
 status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)
-#status3 = CFStatus(URI3, FlyPosture.flying, cf_status_lock3)
+status3 = CFStatus(URI3, FlyPosture.flying, cf_status_lock3)
 
 status_list = [status1,
         status2,
-        #status3
+        status3
         ]
 DuplicablePositionHlCommander.set_class_status_list(status_list)
 
 
 
 
-task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.line([0,0.8,1],[0,-0.8,1])])
-task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([0,-0.8,1],[0,0.8,1])])
-#task3 = CFFlyTask(Crazyflie(), status3, [CFTrajectoryFactory.line([0.5,0,1],[-0.5,0,1])])
+task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.line([-0.8,-0.8,1],[0.8,0.8,1])])
+task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([-0.8,0.8,1],[0.8,-0.8,1])])
+task3 = CFFlyTask(Crazyflie(), status3, [CFTrajectoryFactory.line([1,0,1],[-1,0,1])])
 
 task_list = [task1,
         task2,
-        #task3
+        task3
         ]
 
 
@@ -70,7 +70,7 @@ task_list = [task1,
 cf_args = {
     URI1:[[task1,status1,cf_status_lock1]],
     URI2:[[task2,status2,cf_status_lock2]],
-    #URI3:[[task3,status3,cf_status_lock3]],
+    URI3:[[task3,status3,cf_status_lock3]],
 
     }
 
@@ -252,7 +252,7 @@ if __name__ == '__main__':
         # probably not needed. The Kalman filter will have time to converge
         # any way since it takes a while to start them all up and connect. We
         # keep the code here to illustrate how to do it.
-        swarm.parallel(reset_estimator)
+        #swarm.parallel(reset_estimator)
 
         # The current values of all parameters are downloaded as a part of the
         # connections sequence. Since we have 10 copters this is clogging up
@@ -260,10 +260,10 @@ if __name__ == '__main__':
         # flying.
         print('Waiting for parameters to be downloaded...')
         swarm.parallel(wait_for_param_download)
-        CFDispatch.plot_prep()
+        #CFDispatch.plot_prep()
         scfs = swarm.get_all_scfs()
         swarm.parallel_unblock(run_sequence, args_dict=cf_args)
-        CFDispatch.show()
+        #CFDispatch.show()
 
         #global_dispatch()
         while True:
@@ -273,4 +273,5 @@ if __name__ == '__main__':
             except KeyboardInterrupt:
                 print('ctrl+c incoming')
                 CFFlyTask.emergency_shutdown = True
+                time.sleep(3)
                 break

@@ -86,7 +86,7 @@ class CFDispatch:
     @staticmethod
     def update_cfstatus(timestamp, data, logconf, cf_arg, uri):
         status = cf_arg[1]
-        CFDispatch.ax.scatter(data['kalman.stateX'], data['kalman.stateY'], data['kalman.stateZ'], c=CFDispatch.color_dic[uri], alpha=0.4, label=uri)  # 散点图
+        #CFDispatch.ax.scatter(data['kalman.stateX'], data['kalman.stateY'], data['kalman.stateZ'], c=CFDispatch.color_dic[uri], alpha=0.4, label=uri)  # 散点图
         status.current_position[0] = data['kalman.stateX'] 
         status.current_position[1] = data['kalman.stateY'] 
         status.current_position[2] = data['kalman.stateZ']
@@ -102,8 +102,8 @@ class CFDispatch:
         log_conf.add_variable('kalman.stateZ', 'float')
         log_conf.add_variable('pm.vbat', 'float')
         scf.cf.log.add_config(log_conf)
-        CFDispatch.ax.scatter(-100, -100, -100, c=CFDispatch.color_dic[uri], alpha=0.4, label=uri)  # 散点图
-        CFDispatch.ax.legend()
+        #CFDispatch.ax.scatter(-100, -100, -100, c=CFDispatch.color_dic[uri], alpha=0.4, label=uri)  # 散点图
+        #CFDispatch.ax.legend()
         def outer_callback(timestamp, data, logconf):
             return CFDispatch.update_cfstatus(timestamp, data, logconf, cf_arg, uri)
         log_conf.data_received_cb.add_callback(outer_callback)
