@@ -47,7 +47,8 @@ status1 = CFStatus(URI1, FlyPosture.flying, cf_status_lock1)
 status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)
 status3 = CFStatus(URI3, FlyPosture.flying, cf_status_lock3)
 
-status_list = [status1,
+status_list = [
+        status1,
         status2,
         status3
         ]
@@ -56,11 +57,13 @@ DuplicablePositionHlCommander.set_class_status_list(status_list)
 
 
 
-task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.line([-0.8,-0.8,1],[0.8,0.8,1])])
-task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([-0.8,0.8,1],[0.8,-0.8,1])])
-task3 = CFFlyTask(Crazyflie(), status3, [CFTrajectoryFactory.line([1,0,1],[-1,0,1])])
+task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.line([-0.8,-0.8,1],[0.8,0.8,1]),CFTrajectoryFactory.line([0.8,0.8,1],[-0.8,-0.8,1])])
+task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([-0.8,0.8,1],[0.8,-0.8,1]),CFTrajectoryFactory.line([0.8,-0.8,1],[-0.8,0.8,1])])
+task3 = CFFlyTask(Crazyflie(), status3, [CFTrajectoryFactory.line([1,0,1],[-1,0,1]),CFTrajectoryFactory.line([-1,0,1],[1,0,1])])
 
-task_list = [task1,
+
+task_list = [
+        task1,
         task2,
         task3
         ]

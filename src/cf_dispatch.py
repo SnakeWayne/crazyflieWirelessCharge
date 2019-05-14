@@ -26,7 +26,7 @@ class CFDispatch:
         CFDispatch.ax.set_xlim(-3,3)
         CFDispatch.ax.set_ylim(-3,3)
         CFDispatch.ax.set_zlim(-1,4)
-        CFDispatch.color_dic = {'radio://0/20/2M/E7E7E7E7E7': '#00CED1', 'radio://0/00/2M/E7E7E7E7E7': '#DC143C','radio://0/10/2M/E7E7E7E7E7':'#DC143C'}
+        CFDispatch.color_dic = {'radio://0/80/2M/E7E7E7E7E7': '#00CED1', 'radio://0/90/2M/E7E7E7E7E7': '#DC143C','radio://0/100/2M/E7E7E7E7E7':'#8FBC8F'}
         CFDispatch.area = math.pi * 4 ** 2
         plt.grid(True)  # 添加网格
 
