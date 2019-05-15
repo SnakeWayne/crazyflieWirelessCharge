@@ -328,6 +328,24 @@ class CFTrajectoryFactory:
         return trajectory
 
     @staticmethod
+    def add_multi(traject_list):  # 将两个路径连接成一段路径
+        point_list = []
+        for traject in traject_list:
+            for point_index in range(len(traject.point_list)):
+                point_list.append(traject.point_list[point_index])
+        trajectory = CFTrajectory(FlyPosture.flying, point_list)
+        return trajectory
+
+    @staticmethod
+    def loop_generate(trajectory, loop_time):
+        point_list = []
+        for i in range(loop_time):
+            for point_index in range(len(trajectory.point_list)):
+                point_list.append(trajectory.point_list[point_index])
+        trajectory = CFTrajectory(FlyPosture.flying, point_list)
+        return trajectory
+
+    @staticmethod
     def add(first, second):  # 将两个路径连接成一段路径
         point_list = []
         for point_index in range(len(first.point_list)):

@@ -28,7 +28,6 @@ URI2 = 'radio://0/90/2M/E7E7E7E7E7'
 URI3 = 'radio://0/100/2M/E7E7E7E7E7'
 
 
-
 uris = [
         URI1,
         URI2,
@@ -55,10 +54,11 @@ status_list = [
 DuplicablePositionHlCommander.set_class_status_list(status_list)
 
 
-
-
-task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.line([-0.8,-0.8,1],[0.8,0.8,1]),CFTrajectoryFactory.line([0.8,0.8,1],[-0.8,-0.8,1])])
-task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([-0.8,0.8,1],[0.8,-0.8,1]),CFTrajectoryFactory.line([0.8,-0.8,1],[-0.8,0.8,1])])
+task1 = CFFlyTask(Crazyflie(), status1,[CFTrajectoryFactory.loop_generate(
+    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([1,0,1],[-1,0,1],[0,0,1]),CFTrajectoryFactory.arch([1,0,1],[-1,0,1],[0,0,1])),3)])
+task2 = CFFlyTask(Crazyflie(), status2,[CFTrajectoryFactory.loop_generate(
+    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([1,0,1],[-1,0,1],[0,0,1]),CFTrajectoryFactory.arch([-1,0,1],[1,0,1],[0,0,1])),3)])
+#task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([-0.8,0.8,1],[0.8,-0.8,1]),CFTrajectoryFactory.line([0.8,-0.8,1],[-0.8,0.8,1])])
 task3 = CFFlyTask(Crazyflie(), status3, [CFTrajectoryFactory.line([1,0,1],[-1,0,1]),CFTrajectoryFactory.line([-1,0,1],[1,0,1])])
 
 
