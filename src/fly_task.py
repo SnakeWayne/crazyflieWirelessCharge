@@ -12,7 +12,7 @@ from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
 # 飞行任务类
 class CFFlyTask:
-    _formation_number = 4  # 本次飞行任务无人机个数
+    _formation_number = 3  # 本次飞行任务无人机个数
     _sync_number = 0  # 用于判断是否所有无人机都正常完成当前任务
     _switch_pair_list = None  # 存储当前需要交换的无人机每个pair
     _sync_number_lock = threading.Lock()  # 多机同步时需要的锁
@@ -171,7 +171,7 @@ class CFFlyTask:
                 else:
                     #if self._status_lock.acquire(1):
                         #if self._status.current_posture == FlyPosture.flying:
-                    commander.go_to(current_point[0],current_point[1],current_point[2],0.3)
+                    commander.go_to(current_point[0],current_point[1],current_point[2],3)
 
                         #self._status_lock.release()
                     time.sleep(0.2)

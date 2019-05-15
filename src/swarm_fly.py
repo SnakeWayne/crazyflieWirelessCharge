@@ -23,6 +23,10 @@ from fly_control import CFCollisionAvoidance
 from fly_attr import CFSequence
 from fly_attr import CFStatus
 from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
+from cflib.positioning.motion_commander import MotionCommander
+from cflib.utils.multiranger import Multiranger
+from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
+
 
 URI1 = 'radio://0/80/2M/E7E7E7E7E7'
 URI2 = 'radio://0/90/2M/E7E7E7E7E7'
@@ -35,7 +39,7 @@ uris = [
         URI1,
         URI2,
         URI3,
-        URI4
+        #URI4
         ]
 switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]]}
 CFFlyTask.set_switch_pair_list(switch_pair_list)
@@ -64,14 +68,14 @@ DuplicablePositionHlCommander.set_class_status_list(status_list)
 
 
 task1 = CFFlyTask(Crazyflie(), status1,[CFTrajectoryFactory.loop_generate(
-    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([-0.3,0.3*math.sqrt(3),1],[0.3,-0.3*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.3,-0.3*math.sqrt(3),1],[-0.3,0.3*math.sqrt(3),1],[0,0,1])),2)])
+    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([-0.23,0.23*math.sqrt(3),1],[0.23,-0.23*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.23,-0.23*math.sqrt(3),1],[-0.23,0.23*math.sqrt(3),1],[0,0,1])),5)])
 task2 = CFFlyTask(Crazyflie(), status2,[CFTrajectoryFactory.loop_generate(
-    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([-0.3,-0.3*math.sqrt(3),1],[0.3,0.3*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.3,0.3*math.sqrt(3),1],[-0.3,-0.3*math.sqrt(3),1],[0,0,1])),2)])
+    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([-0.23,-0.23*math.sqrt(3),1],[0.23,0.23*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.23,0.23*math.sqrt(3),1],[-0.23,-0.23*math.sqrt(3),1],[0,0,1])),5)])
 task3 = CFFlyTask(Crazyflie(), status3,[CFTrajectoryFactory.loop_generate(
-    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([0.6,0,1],[-0.6,0,1],[0,0,1]),CFTrajectoryFactory.arch([-0.6,0,1],[0.6,0,1],[0,0,1])),2)])
+    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([0.46,0,1],[-0.46,0,1],[0,0,1]),CFTrajectoryFactory.arch([-0.46,0,1],[0.46,0,1],[0,0,1])),5)])
 #task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([-0.8,0.8,1],[0.8,-0.8,1]),CFTrajectoryFactory.line([0.8,-0.8,1],[-0.8,0.8,1])])
 #task3 = CFFlyTask(Crazyflie(), status3, [CFTrajectoryFactory.line([1.5,0,1],[-1.5,0,1]),CFTrajectoryFactory.line([-1.5,0,1],[1.5,0,1]),CFTrajectoryFactory.line([1.5,0,1],[-1.5,0,1]),CFTrajectoryFactory.line([-1.5,0,1],[1.5,0,1])])
-task4 = CFFlyTask(Crazyflie(), status4, [CFTrajectoryFactory.line([0,1.5,1],[0,-1.5,1]),CFTrajectoryFactory.line([0,-1.5,1],[0,1.5,1]),CFTrajectoryFactory.line([0,1.5,1],[0,-1.5,1]),CFTrajectoryFactory.line([0,-1.5,1],[0,1.5,1])])
+#task4 = CFFlyTask(Crazyflie(), status4, [CFTrajectoryFactory.line([0,1.5,1],[0,-1.5,1]),CFTrajectoryFactory.line([0,-1.5,1],[0,1.5,1]),CFTrajectoryFactory.line([0,1.5,1],[0,-1.5,1]),CFTrajectoryFactory.line([0,-1.5,1],[0,1.5,1])])
 
 
 
@@ -79,7 +83,7 @@ task_list = [
         task1,
         task2,
         task3,
-        task4,
+        #task4,
         ]
 
 
@@ -88,7 +92,7 @@ cf_args = {
     URI1:[[task1,status1,cf_status_lock1]],
     URI2:[[task2,status2,cf_status_lock2]],
     URI3:[[task3,status3,cf_status_lock3]],
-    URI4:[[task4,status4,cf_status_lock4]],
+    #URI4:[[task4,status4,cf_status_lock4]],
     }
 
 
@@ -258,6 +262,36 @@ def global_dispatch():
             current_formation_number = 0
             end_all = True
 
+def is_close(range):
+    MIN_DISTANCE = 0.5  # m
+
+    if range is None:
+        return False
+    else:
+        return range < MIN_DISTANCE
+
+def update_cfstatus(timestamp, data, logconf, status, uri):
+    status.current_position[0] = data['kalman.stateX'] 
+    status.current_position[1] = data['kalman.stateY'] 
+    status.current_position[2] = data['kalman.stateZ']
+    status.current_battery = data['pm.vbat'] * 10
+    #print(uri,'x:', status.current_position[0],'y:', status.current_position[1],'z:', status.current_position[2])
+
+def add_callback_to_singlecf(uri, scf, status):
+    cflib.crtp.init_drivers(enable_debug_driver=False)
+    log_conf = LogConfig(name=uri, period_in_ms=500)
+    log_conf.add_variable('kalman.stateX', 'float')
+    log_conf.add_variable('kalman.stateY', 'float')
+    log_conf.add_variable('kalman.stateZ', 'float')
+    log_conf.add_variable('pm.vbat', 'float')
+    scf.cf.log.add_config(log_conf)
+
+    def outer_callback(timestamp, data, logconf):
+        return update_cfstatus(timestamp, data, logconf, status, uri)
+    log_conf.data_received_cb.add_callback(outer_callback)
+    print('about to start log')
+    log_conf.start()
+
 
 if __name__ == '__main__':
     # logging.basicConfig(level=logging.DEBUG)
@@ -283,12 +317,67 @@ if __name__ == '__main__':
         #CFDispatch.show()
 
         #global_dispatch()
-        while True:
-            try:
-                if is_all_end(status_list):
-                    break
-            except KeyboardInterrupt:
-                print('ctrl+c incoming')
-                CFFlyTask.emergency_shutdown = True
-                time.sleep(3)
-                break
+        cf = Crazyflie(rw_cache='./cache')
+        with SyncCrazyflie(URI4, cf=cf) as scf:
+            with MotionCommander(scf, default_height=1) as motion_commander:
+                with Multiranger(scf) as multiranger:
+                    add_callback_to_singlecf(URI4,scf,status4)
+                    keep_flying = True
+
+                    lastcloseLeft=0
+                    lastcloseRight=0
+                    lastcloseFront=0
+                    lastcloseBack=0
+
+                    
+                    while keep_flying:
+                        try:
+                            VELOCITY = 0.5
+
+                            velocity_x = 0.0
+                            velocity_y = 0.0
+
+                            if is_close(multiranger.left) or lastcloseLeft:
+                                velocity_y = -VELOCITY
+                                lastcloseLeft=1
+                                lastcloseRight=0
+                                lastcloseFront=0
+                                lastcloseBack=0
+
+                            if is_close(multiranger.right) or lastcloseRight:
+                                velocity_y = +VELOCITY
+                                lastcloseLeft=0
+                                lastcloseRight=1
+                                lastcloseFront=0
+                                lastcloseBack=0
+
+                            if is_close(multiranger.front) or lastcloseFront:
+                                velocity_x = -VELOCITY
+                                lastcloseLeft=0
+                                lastcloseRight=0
+                                lastcloseFront=1
+                                lastcloseBack=0
+
+                            if is_close(multiranger.back) or lastcloseBack:
+                                velocity_x = +VELOCITY
+                                lastcloseLeft=0
+                                lastcloseRight=0
+                                lastcloseFront=0
+                                lastcloseBack=1
+
+
+                            #if is_close(multiranger.up):
+                                #keep_flying = False
+
+                            motion_commander.start_linear_motion(
+                                velocity_x, velocity_y, 0)
+
+                            time.sleep(0.1)
+                            
+                            if is_all_end(status_list):
+                                break
+                        except KeyboardInterrupt:
+                            print('ctrl+c incoming')
+                            CFFlyTask.emergency_shutdown = True
+                            time.sleep(3)
+                            break
