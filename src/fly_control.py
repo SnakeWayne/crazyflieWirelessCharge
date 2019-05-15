@@ -210,7 +210,7 @@ class CFCollisionAvoidance:
     REPULSION_CONSTANT = 75  # 斥力常量
     MIN_SAFETY_XY_DST =0.65  # xy轴最小安全距离
     MIN_SAFETY_Z_DST = 0.6 # z轴最小安全距离
-    MIN_SAFETY_DST = 0.8
+    MIN_SAFETY_DST = 0.7
     #emergency_shutdown = False
 
     def __init__(self, cf, status):
@@ -369,7 +369,7 @@ class CFCollisionAvoidance:
                     nexty = current_position[1] + sum_direction[1] * step
                     nextz = current_position[2] + sum_direction[2] * step
                     commander.go_to(nextx, nexty, nextz,4)
-                    time.sleep(0.2)
+                    time.sleep(0.1)
                     print('cf',self._status.uri,'is avoiding')
                     continue
                     #print('cf',self._status.uri,'is going to the calculated avoiding position',nextx,nexty,nextz,'in direction',sum_direction)

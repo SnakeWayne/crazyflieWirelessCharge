@@ -5,6 +5,7 @@ The main function to control multi cf to fly and then dynamic change cf to charg
 """
 import time
 import threading
+import math
 
 import cflib.crtp
 from cflib.crazyflie.log import LogConfig
@@ -26,12 +27,15 @@ from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 URI1 = 'radio://0/80/2M/E7E7E7E7E7'
 URI2 = 'radio://0/90/2M/E7E7E7E7E7'
 URI3 = 'radio://0/100/2M/E7E7E7E7E7'
+URI4 = 'radio://0/00/2M/E7E7E7E7E7'
+
 
 
 uris = [
         URI1,
         URI2,
-        URI3
+        URI3,
+        URI4
         ]
 switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]]}
 CFFlyTask.set_switch_pair_list(switch_pair_list)
@@ -40,32 +44,42 @@ CFFlyTask.set_switch_pair_list(switch_pair_list)
 cf_status_lock1 = threading.Lock()
 cf_status_lock2 = threading.Lock()
 cf_status_lock3 = threading.Lock()
+cf_status_lock4 = threading.Lock()
+
 
 
 status1 = CFStatus(URI1, FlyPosture.flying, cf_status_lock1)
 status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)
 status3 = CFStatus(URI3, FlyPosture.flying, cf_status_lock3)
+status4 = CFStatus(URI4, FlyPosture.flying, cf_status_lock4)
+
 
 status_list = [
         status1,
         status2,
-        status3
+        status3,
+        status4,
         ]
 DuplicablePositionHlCommander.set_class_status_list(status_list)
 
 
 task1 = CFFlyTask(Crazyflie(), status1,[CFTrajectoryFactory.loop_generate(
-    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([1,0,1],[-1,0,1],[0,0,1]),CFTrajectoryFactory.arch([1,0,1],[-1,0,1],[0,0,1])),3)])
+    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([-0.3,0.3*math.sqrt(3),1],[0.3,-0.3*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.3,-0.3*math.sqrt(3),1],[-0.3,0.3*math.sqrt(3),1],[0,0,1])),2)])
 task2 = CFFlyTask(Crazyflie(), status2,[CFTrajectoryFactory.loop_generate(
-    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([1,0,1],[-1,0,1],[0,0,1]),CFTrajectoryFactory.arch([-1,0,1],[1,0,1],[0,0,1])),3)])
+    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([-0.3,-0.3*math.sqrt(3),1],[0.3,0.3*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.3,0.3*math.sqrt(3),1],[-0.3,-0.3*math.sqrt(3),1],[0,0,1])),2)])
+task3 = CFFlyTask(Crazyflie(), status3,[CFTrajectoryFactory.loop_generate(
+    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([0.6,0,1],[-0.6,0,1],[0,0,1]),CFTrajectoryFactory.arch([-0.6,0,1],[0.6,0,1],[0,0,1])),2)])
 #task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([-0.8,0.8,1],[0.8,-0.8,1]),CFTrajectoryFactory.line([0.8,-0.8,1],[-0.8,0.8,1])])
-task3 = CFFlyTask(Crazyflie(), status3, [CFTrajectoryFactory.line([1,0,1],[-1,0,1]),CFTrajectoryFactory.line([-1,0,1],[1,0,1])])
+#task3 = CFFlyTask(Crazyflie(), status3, [CFTrajectoryFactory.line([1.5,0,1],[-1.5,0,1]),CFTrajectoryFactory.line([-1.5,0,1],[1.5,0,1]),CFTrajectoryFactory.line([1.5,0,1],[-1.5,0,1]),CFTrajectoryFactory.line([-1.5,0,1],[1.5,0,1])])
+task4 = CFFlyTask(Crazyflie(), status4, [CFTrajectoryFactory.line([0,1.5,1],[0,-1.5,1]),CFTrajectoryFactory.line([0,-1.5,1],[0,1.5,1]),CFTrajectoryFactory.line([0,1.5,1],[0,-1.5,1]),CFTrajectoryFactory.line([0,-1.5,1],[0,1.5,1])])
+
 
 
 task_list = [
         task1,
         task2,
-        task3
+        task3,
+        task4,
         ]
 
 
@@ -74,7 +88,7 @@ cf_args = {
     URI1:[[task1,status1,cf_status_lock1]],
     URI2:[[task2,status2,cf_status_lock2]],
     URI3:[[task3,status3,cf_status_lock3]],
-
+    URI4:[[task4,status4,cf_status_lock4]],
     }
 
 
