@@ -12,7 +12,7 @@ from customcflib.duplicable_hl_commander import DuplicablePositionHlCommander
 
 # 飞行任务类
 class CFFlyTask:
-    _formation_number = 0  # 本次飞行任务无人机个数
+    _formation_number = 3  # 本次飞行任务无人机个数
     _sync_number = 0  # 用于判断是否所有无人机都正常完成当前任务
     _switch_pair_list = None  # 存储当前需要交换的无人机每个pair
     _sync_number_lock = threading.Lock()  # 多机同步时需要的锁
@@ -81,7 +81,7 @@ class CFFlyTask:
                 with self._status_lock:
                     self._status.current_posture = FlyPosture.hovering
                 CFFlyTask._sync_number += 1
-            while CFFlyTask._sync_number * CFFlyTask._formation_number != 0:  # 在悬停等待的时候可能发生避障或者无人机更换
+            while CFFlyTask._sync_number % CFFlyTask._formation_number != 0:  # 在悬停等待的时候可能发生避障或者无人机更换
                 time.sleep(0.1)
                 if CFFlyTask.emergency_shutdown:
                     break
@@ -112,10 +112,10 @@ class CFFlyTask:
                 current_point = point
                 self._status.current_end_point = trajectory.get_current_end_point()
                 if self._status.current_posture == FlyPosture.avoiding_flying:
-                    time.sleep(0.3)
+                    time.sleep(0.1)
                     continue
                 else:
-                    commander.go_to(current_point[0],current_point[1],current_point[2],0.5)
+                    commander.go_to(current_point[0],current_point[1],current_point[2])
                     time.sleep(0.1)
             else:
                 while CFFlyTask.not_close_enough(self._status, current_point):
@@ -123,7 +123,7 @@ class CFFlyTask:
                         time.sleep(0.1)
                         continue
                     else:
-                        commander.go_to(current_point[0],current_point[1],current_point[2],0.5)
+                        commander.go_to(current_point[0],current_point[1],current_point[2])
                         time.sleep(0.1)
                 commander.land()
                 return
@@ -150,7 +150,7 @@ class CFFlyTask:
             if point is not None:
                 if initial_point:
                     while CFFlyTask.not_close_enough(self._status.current_position, point):
-                        commander.go_to(point[0], point[1], point[2],0.5)
+                        commander.go_to(point[0], point[1], point[2],1)
                         #print('getting close to start_position')
                     initial_point = False
                 current_point = point  # 不是最后一个点的话赋值
@@ -160,7 +160,7 @@ class CFFlyTask:
                     self._status.current_end_point[1] = end_point[1]
                     self._status.current_end_point[2] = end_point[2]
                 if self._status.current_posture == FlyPosture.avoiding_flying:
-                    time.sleep(0.3)  # 避障的时候更新点的速度减慢
+                    time.sleep(0.2)  # 避障的时候更新点的速度减慢
                     continue
                 elif CFFlyTask._switch_pair_list['formation'][0] == self._cf.link_uri:  # 是否为交换无人机
                     self.formation_fly_to_charge(
@@ -169,15 +169,18 @@ class CFFlyTask:
                         self._status.current_posture = FlyPosture.charging
                     return
                 else:
-                    commander.go_to(current_point[0],current_point[1],current_point[2],0.5)
-                    print('cf',self._cf.link_uri,'is not avoiding and go_to',current_point[0],current_point[1],current_point[2],0.5)
-                    time.sleep(0.1)
+                    #if self._status_lock.acquire(1):
+                        #if self._status.current_posture == FlyPosture.flying:
+                    commander.go_to(current_point[0],current_point[1],current_point[2],0.3)
+
+                        #self._status_lock.release()
+                    time.sleep(0.2)
+                    print('cf',self._cf.link_uri,'is not avoiding and go_to',current_point[0],current_point[1],current_point[2])
+                    #time.sleep(0.1) 
             else:
-                while self._status.current_posture == FlyPosture.avoiding_flying:
-                    time.sleep(0.1)
                 while CFFlyTask.not_close_enough(self._status.current_position, current_point):  # 有可能避障完成之后已经便利到终点，但是偏离实际位置，所以还是要修正的，修正过程中也会有避障可能
                     if self._status.current_posture == FlyPosture.avoiding_flying:
-                        time.sleep(0.1)
+                        time.sleep(0.2)
                         continue
                     elif CFFlyTask._switch_pair_list['formation'][0] == self._cf.link_uri:
                         self.formation_fly_to_charge(
