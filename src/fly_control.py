@@ -370,7 +370,7 @@ class CFCollisionAvoidance:
                     nextz = current_position[2] + sum_direction[2] * step
                     commander.go_to(nextx, nexty, nextz,4)
                     time.sleep(0.1)
-                    print('cf',self._status.uri,'is avoiding')
+                    #print('cf',self._status.uri,'is avoiding')
                     continue
                     #print('cf',self._status.uri,'is going to the calculated avoiding position',nextx,nexty,nextz,'in direction',sum_direction)
                 #time.sleep(0.1)

@@ -28,10 +28,10 @@ from cflib.utils.multiranger import Multiranger
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 
 
-URI1 = 'radio://0/80/2M/E7E7E7E7E7'
+URI1 = 'radio://0/00/2M/E7E7E7E7E7'
 URI2 = 'radio://0/90/2M/E7E7E7E7E7'
 URI3 = 'radio://0/100/2M/E7E7E7E7E7'
-URI4 = 'radio://0/00/2M/E7E7E7E7E7'
+URI4 = 'radio://0/80/2M/E7E7E7E7E7'
 
 
 
@@ -39,9 +39,9 @@ uris = [
         URI1,
         URI2,
         URI3,
-        #URI4
+        URI4
         ]
-switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]]}
+switch_pair_list = {'formation': ['00', [0.0, 0.0, 0.0]], 'charging': ['00', [0.0, 0.0, 0.0]]}
 CFFlyTask.set_switch_pair_list(switch_pair_list)
 
 
@@ -55,7 +55,7 @@ cf_status_lock4 = threading.Lock()
 status1 = CFStatus(URI1, FlyPosture.flying, cf_status_lock1)
 status2 = CFStatus(URI2, FlyPosture.flying, cf_status_lock2)
 status3 = CFStatus(URI3, FlyPosture.flying, cf_status_lock3)
-status4 = CFStatus(URI4, FlyPosture.flying, cf_status_lock4)
+status4 = CFStatus(URI4, FlyPosture.charging, cf_status_lock4)
 
 
 status_list = [
@@ -68,14 +68,15 @@ DuplicablePositionHlCommander.set_class_status_list(status_list)
 
 
 task1 = CFFlyTask(Crazyflie(), status1,[CFTrajectoryFactory.loop_generate(
-    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([-0.23,0.23*math.sqrt(3),1],[0.23,-0.23*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.23,-0.23*math.sqrt(3),1],[-0.23,0.23*math.sqrt(3),1],[0,0,1])),5)])
+    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([-0.23,0.23*math.sqrt(3),1],[0.23,-0.23*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.23,-0.23*math.sqrt(3),1],[-0.23,0.23*math.sqrt(3),1],[0,0,1])),2)])
 task2 = CFFlyTask(Crazyflie(), status2,[CFTrajectoryFactory.loop_generate(
-    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([-0.23,-0.23*math.sqrt(3),1],[0.23,0.23*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.23,0.23*math.sqrt(3),1],[-0.23,-0.23*math.sqrt(3),1],[0,0,1])),5)])
+    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([-0.23,-0.23*math.sqrt(3),1],[0.23,0.23*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.23,0.23*math.sqrt(3),1],[-0.23,-0.23*math.sqrt(3),1],[0,0,1])),2)])
 task3 = CFFlyTask(Crazyflie(), status3,[CFTrajectoryFactory.loop_generate(
-    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([0.46,0,1],[-0.46,0,1],[0,0,1]),CFTrajectoryFactory.arch([-0.46,0,1],[0.46,0,1],[0,0,1])),5)])
+    CFTrajectoryFactory.add(CFTrajectoryFactory.arch([0.46,0,1],[-0.46,0,1],[0,0,1]),CFTrajectoryFactory.arch([-0.46,0,1],[0.46,0,1],[0,0,1])),2)])
 #task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([-0.8,0.8,1],[0.8,-0.8,1]),CFTrajectoryFactory.line([0.8,-0.8,1],[-0.8,0.8,1])])
 #task3 = CFFlyTask(Crazyflie(), status3, [CFTrajectoryFactory.line([1.5,0,1],[-1.5,0,1]),CFTrajectoryFactory.line([-1.5,0,1],[1.5,0,1]),CFTrajectoryFactory.line([1.5,0,1],[-1.5,0,1]),CFTrajectoryFactory.line([-1.5,0,1],[1.5,0,1])])
 #task4 = CFFlyTask(Crazyflie(), status4, [CFTrajectoryFactory.line([0,1.5,1],[0,-1.5,1]),CFTrajectoryFactory.line([0,-1.5,1],[0,1.5,1]),CFTrajectoryFactory.line([0,1.5,1],[0,-1.5,1]),CFTrajectoryFactory.line([0,-1.5,1],[0,1.5,1])])
+task4 = CFFlyTask(Crazyflie(), status4, [])
 
 
 
@@ -83,7 +84,7 @@ task_list = [
         task1,
         task2,
         task3,
-        #task4,
+        task4,
         ]
 
 
@@ -92,7 +93,7 @@ cf_args = {
     URI1:[[task1,status1,cf_status_lock1]],
     URI2:[[task2,status2,cf_status_lock2]],
     URI3:[[task3,status3,cf_status_lock3]],
-    #URI4:[[task4,status4,cf_status_lock4]],
+    URI4:[[task4,status4,cf_status_lock4]],
     }
 
 
@@ -211,7 +212,7 @@ def run_sequence(scf, cf_arg):
                 print(cf.link_uri,'is going to run')
                 cf_arg[0].run()
             elif cf_arg[1].current_posture == FlyPosture.charging:
-                time.sleep(5)
+                time.sleep(2)
             elif cf_arg[1].current_posture == FlyPosture.over:
                 break
     except Exception as e:
@@ -223,9 +224,12 @@ def global_dispatch():
     global status_list
     global scfs
     global end_all
+    global switch_pair_list
     while True:
         try:
-            time.sleep(10)
+            if is_all_end(status_list):
+                break
+            time.sleep(6)
             formation_cf_uri, charging_cf_uri = CFDispatch.calculate_how_to_dispatch(status_list)
 
             if formation_cf_uri == 'radio':  # temp define invalid uri
@@ -237,30 +241,42 @@ def global_dispatch():
                 print('switching')
                 formation_cf = scfs[formation_cf_uri].cf
                 charging_cf = scfs[charging_cf_uri].cf
+                print('formation_cf',formation_cf.link_uri)
+                print('charging_cf',charging_cf.link_uri)
                 switch_pair_list['formation'][0] = formation_cf_uri
-                formation_status = get_status_from_status_list(formation_cf_uri, status_list)
+                formation_status = cf_args[formation_cf.link_uri][0][1]
                 switch_pair_list['formation'][1][0] = formation_status.current_position[0]
                 switch_pair_list['formation'][1][1] = formation_status.current_position[1]
                 switch_pair_list['formation'][1][2] = formation_status.current_position[2]
                 switch_pair_list['charging'][0] = charging_cf_uri
-                charging_status = get_status_from_status_list(charging_cf_uri,status_list)
+                charging_status =  cf_args[charging_cf.link_uri][0][1]
                 switch_pair_list['charging'][1][0] = charging_status.current_position[0]
                 switch_pair_list['charging'][1][1] = charging_status.current_position[1]
                 switch_pair_list['charging'][1][2] = charging_status.current_position[2]
                 commander = DuplicablePositionHlCommander(charging_cf)
+                print('checking ')
+                commander.status_check()
                 commander.take_off()
-                while formation_status.current_posture != FlyPosture.charging:
-                    time.sleep(0.1)
-                print('formation cf has land')
-                cf_args[charging_cf_uri][0].copy(cf_args[formation_cf_uri][0])
+                commander.go_to(switch_pair_list['charging'][1][0],switch_pair_list['charging'][1][1],1)
                 with charging_status.status_lock:  # 更新充电无人机状态，在无人机线程中可以唤醒
                     charging_status.current_posture = FlyPosture.flying
+                    cf_args[charging_cf_uri][0][0].copy(cf_args[formation_cf_uri][0][0])
+                    
                     charging_cf_avoidance = CFCollisionAvoidance(charging_cf, cf_args[charging_cf_uri][0][1])
                     charging_cf_avoidance.start_avoid(status_list)
+
+                #with charging_status.status_lock:  # 更新充电无人机状态，在无人机线程中可以唤醒
+                    #charging_status.current_posture = FlyPosture.hovering
+                while formation_status.current_posture != FlyPosture.charging:
+                    time.sleep(0.2)
+                print('formation cf has land')
+                switch_pair_list = {'formation': ['00', [0, 0, 0]], 'charging': ['00', [0, 0, 0]]}
+                
         except KeyboardInterrupt:
             print('ctrl+c incoming')
-            current_formation_number = 0
-            end_all = True
+            CFFlyTask.emergency_shutdown = True
+            time.sleep(3)
+            break
 
 def is_close(range):
     MIN_DISTANCE = 0.5  # m
@@ -316,7 +332,8 @@ if __name__ == '__main__':
         swarm.parallel_unblock(run_sequence, args_dict=cf_args)
         #CFDispatch.show()
 
-        #global_dispatch()
+        global_dispatch()
+        '''
         cf = Crazyflie(rw_cache='./cache')
         with SyncCrazyflie(URI4, cf=cf) as scf:
             with MotionCommander(scf, default_height=1) as motion_commander:
@@ -328,10 +345,12 @@ if __name__ == '__main__':
                     lastcloseRight=0
                     lastcloseFront=0
                     lastcloseBack=0
+                    
 
                     
                     while keep_flying:
                         try:
+                            
                             VELOCITY = 0.5
 
                             velocity_x = 0.0
@@ -381,3 +400,4 @@ if __name__ == '__main__':
                             CFFlyTask.emergency_shutdown = True
                             time.sleep(3)
                             break
+                            '''

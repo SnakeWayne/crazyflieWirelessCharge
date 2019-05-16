@@ -17,7 +17,7 @@ from fly_attr import CFStatus
 from fly_task import *
 
 
-URI = 'radio://0/20/2M/E7E7E7E7E7'
+URI = 'radio://0/80/2M/E7E7E7E7E7'
 
 
 
@@ -58,8 +58,14 @@ if __name__ == '__main__':
     task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.arch([1,1,1],[-1,-1,1],[-1,1,0]),CFTrajectoryFactory.arch([-1,-1,1],[1,1,1],[-1,1,0])])
     DuplicablePositionHlCommander.set_class_status_list(status_list)
     with SyncCrazyflie(URI, cf=Crazyflie(rw_cache='./cache')) as scf:
-        task1.set_cf_afterword(scf.cf)
+        #task1.set_cf_afterword(scf.cf)
         add_callback_to_singlecf(URI,scf,status1)
-        task1.run()
+        commander = DuplicablePositionHlCommander(scf.cf)
+        commander.take_off()
+        commander.go_to(1,1,1)
+        print('after take off sleep 2s')
+        time.sleep(10)
+        commander.land()
+        #task1.run()
       # We take off when the commander is create
                  

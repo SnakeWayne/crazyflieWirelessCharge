@@ -62,14 +62,14 @@ class CFStatus:
         """
         self._uri = uri
         if current_position == None:
-            self._current_position = [0, 0, 0]
+            self._current_position = [0.0, 0.0, 0.0]
         else:
             self._current_position = current_position
         self._current_battery = current_battery
         self._status_lock = status_lock
         self._current_posture = current_posture
         if current_end_point == None:
-            self._current_end_point = [0, 0, 0]
+            self._current_end_point = [0.0, 0.0, 0.0]
         else:
             self._current_end_point = current_end_point
 

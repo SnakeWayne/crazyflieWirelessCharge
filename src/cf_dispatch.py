@@ -36,13 +36,15 @@ class CFDispatch:
 
     @staticmethod
     def calculate_how_to_dispatch(status_list):
+        if CFDispatch._n >= 1:
+             return "radio", "radio"
 
         list_flying = []  # 飞行中的无人机
         list_charging = []  # 充电中的无人机
 
         # 遍历list根据状态分为飞行中和充电中
         for i in range(len(status_list)):
-            if status_list[i].current_posture == FlyPosture.flying or status_list[i].current_posture == FlyPosture.hover:
+            if status_list[i].current_posture == FlyPosture.flying or status_list[i].current_posture == FlyPosture.hovering:
                 list_flying.append(status_list[i])
             elif status_list[i].current_posture == FlyPosture.charging:
                 list_charging.append(status_list[i])
@@ -71,8 +73,7 @@ class CFDispatch:
         # 虽说初始状态不一定，但这样设置能满足初始电量一样或电量差比较多的情况，不仅有一个底线，还有电量都比较多情况下的梯度变化
         patch_min_battery =100 # 80 - CFDispatch._n * 20  # 需要调度的最低变量
         CFDispatch._n = CFDispatch._n + 1
-        if CFDispatch._n > 1:
-             return "radio", "radio"
+        
         if patch_min_battery < safe_battery:
             patch_min_battery = safe_battery
         # 判断一下是否需要调度
@@ -91,7 +92,8 @@ class CFDispatch:
         status.current_position[1] = data['kalman.stateY'] 
         status.current_position[2] = data['kalman.stateZ']
         status.current_battery = data['pm.vbat'] * 10
-       # print(uri,'x:', status.current_position[0],'y:', status.current_position[1],'z:', status.current_position[2])
+        #if uri == 'radio://0/00/2M/E7E7E7E7E7':
+            #print(uri,'x:', status.current_position[0],'y:', status.current_position[1],'z:', status.current_position[2])
 
     @staticmethod
     def add_callback_to_singlecf(uri, scf, cf_arg):
