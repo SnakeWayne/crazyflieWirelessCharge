@@ -60,6 +60,10 @@ class DuplicablePositionHlCommander(PositionHlCommander):
 
     def set_cf_status(self, status):
         self.__status = status
+    
+    def status_check(self):
+        print(self._cf.link_uri,'s current position is',self.__status.current_position)
+
 
     def _get_status(self, cf):
         for i in range(len(DuplicablePositionHlCommander._status_list)):
@@ -215,4 +219,4 @@ class DuplicablePositionHlCommander(PositionHlCommander):
        # print('complete kalman.resetEstimation 1')
         self._cf.param.set_value('kalman.resetEstimation', '0')
         #print('complete kalman.resetEstimation 0')
-        time.sleep(0.2)
+        time.sleep(1)
