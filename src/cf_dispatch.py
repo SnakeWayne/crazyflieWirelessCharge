@@ -16,6 +16,8 @@ class CFDispatch:
 
     _n = 0  # 用于判断当前调度情况
     ax = plt.axes(projection='3d')
+    battery_need = 50.0  # 设定本次飞行任务所需电量
+    q = 0.5  # 充电速度，耗电速度之比
 
     @staticmethod
     def plot_prep():
@@ -42,12 +44,22 @@ class CFDispatch:
         list_flying = []  # 飞行中的无人机
         list_charging = []  # 充电中的无人机
 
+        total_battery_power = 0
+
         # 遍历list根据状态分为飞行中和充电中
         for i in range(len(status_list)):
-            if status_list[i].current_posture == FlyPosture.flying or status_list[i].current_posture == FlyPosture.hovering:
+            if status_list[i].current_posture == FlyPosture.flying \
+                    or status_list[i].current_posture == FlyPosture.hovering \
+                    or status_list[i].current_posture == FlyPosture.avoiding_flying \
+                    or status_list[i].current_posture == FlyPosture.avoiding_hovering:
+                total_battery_power += status_list[i].current_battery
                 list_flying.append(status_list[i])
             elif status_list[i].current_posture == FlyPosture.charging:
+                total_battery_power += min(status_list[i].current_battery, CFDispatch.battery_need)
                 list_charging.append(status_list[i])
+
+        if total_battery_power + len(list_charging)*CFDispatch.battery_need*CFDispatch.q > len(list_flying)*CFDispatch.battery_need*CFDispatch.q:
+            return "radio", "radio"  # 停止飞行任务
 
         min_battery = 100
         max_battery = 0
