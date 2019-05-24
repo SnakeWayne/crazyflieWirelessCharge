@@ -59,7 +59,7 @@ task1 = CFFlyTask(Crazyflie(), status1,[CFTrajectoryFactory.loop_generate(
 task2 = CFFlyTask(Crazyflie(), status2,[CFTrajectoryFactory.loop_generate(
     CFTrajectoryFactory.add(CFTrajectoryFactory.arch([1,0,1],[-1,0,1],[0,0,1]),CFTrajectoryFactory.arch([-1,0,1],[1,0,1],[0,0,1])),3)])
 #task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.line([-0.8,0.8,1],[0.8,-0.8,1]),CFTrajectoryFactory.line([0.8,-0.8,1],[-0.8,0.8,1])])
-task3 = CFFlyTask(Crazyflie(), status3, [CFTrajectoryFactory.line([1,0,1],[-1,0,1]),CFTrajectoryFactory.line([-1,0,1],[1,0,1])]) 
+task3 = CFFlyTask(Crazyflie(), status3, [CFTrajectoryFactory.line([1,0,1],[-1,0,1]),CFTrajectoryFactory.line([-1,0,1],[1,0,1])])
 
 
 task_list = [
