@@ -78,6 +78,14 @@ task3 = CFFlyTask(Crazyflie(), status3,[CFTrajectoryFactory.loop_generate(
 #task4 = CFFlyTask(Crazyflie(), status4, [CFTrajectoryFactory.line([0,1.5,1],[0,-1.5,1]),CFTrajectoryFactory.line([0,-1.5,1],[0,1.5,1]),CFTrajectoryFactory.line([0,1.5,1],[0,-1.5,1]),CFTrajectoryFactory.line([0,-1.5,1],[0,1.5,1])])
 task4 = CFFlyTask(Crazyflie(), status4, [])
 
+'''
+task1 = CFFlyTask(Crazyflie(), status1, [CFTrajectoryFactory.arch([-0.23,0.23*math.sqrt(3),1],[0.23,-0.23*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.23,-0.23*math.sqrt(3),1],[-0.23,0.23*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([-0.23,0.23*math.sqrt(3),1],[0.23,-0.23*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.23,-0.23*math.sqrt(3),1],[-0.23,0.23*math.sqrt(3),1],[0,0,1])])
+
+task2 = CFFlyTask(Crazyflie(), status2, [CFTrajectoryFactory.arch([-0.23,-0.23*math.sqrt(3),1],[0.23,0.23*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.23,0.23*math.sqrt(3),1],[-0.23,-0.23*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([-0.23,-0.23*math.sqrt(3),1],[0.23,0.23*math.sqrt(3),1],[0,0,1]),CFTrajectoryFactory.arch([0.23,0.23*math.sqrt(3),1],[-0.23,-0.23*math.sqrt(3),1],[0,0,1])])
+
+task3 = CFFlyTask(Crazyflie(), status3, [CFTrajectoryFactory.arch([0.46,0,1],[-0.46,0,1],[0,0,1]),CFTrajectoryFactory.arch([-0.46,0,1],[0.46,0,1],[0,0,1]，CFTrajectoryFactory.arch([0.46,0,1],[-0.46,0,1],[0,0,1]),CFTrajectoryFactory.arch([-0.46,0,1],[0.46,0,1],[0,0,1]])
+'''
+
 
 
 task_list = [
